@@ -12,24 +12,77 @@
     #ifdef GL_ES
     precision highp float;
     #endif
-    
-    uniform vec3 modelColor;
 
-    void main(void) {
-        gl_FragColor = vec4(modelColor, 1.0); 
+    varying vec4 vFinalColor;
+
+    void main(void)
+    {
+        gl_FragColor = vFinalColor;
     }
 </script>
 
 <!-- Vertex Shader //-->
 <script id='shader-vs' type='x-shader/x-vertex'>
     attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uPMatrix;
+    uniform mat4 uMVMatrix; 
+    uniform mat4 uPMatrix; 
+    uniform mat4 uNMatrix;
+
+    uniform float uShininess;        //shininness
+    uniform vec3 uLightDirection;    //light direction
+
+    uniform vec4 uLightAmbient;      //light ambient property
+    uniform vec4 uLightDiffuse;      //light diffuse property 
+    uniform vec4 uLightSpecular;     //light specular property
+
+    uniform vec4 uMaterialAmbient;   //object ambient property
+    uniform vec4 uMaterialDiffuse;   //object diffuse property
+    uniform vec4 uMaterialSpecular;  //object specular property
+
+    varying vec4 vFinalColor;
+
 
     void main(void) {
-        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-        gl_PointSize = 3.0;
+        //Transformed vertex position
+        vec4 vertex = uMVMatrix * vec4(aVertexPosition, 1.0);
+        
+        //Transformed normal position
+        vec3 N = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
+        
+        //Invert and normalize light to calculate lambertTerm
+        vec3 L = normalize(uLightDirection); 
+        
+        //Lambert's cosine law
+        float lambertTerm = clamp(dot(N,-L),0.0,1.0);
+        
+        //Ambient Term
+        vec4 Ia = uLightAmbient * uMaterialAmbient;
+        
+        //Diffuse Term
+        vec4 Id = vec4(0.0,0.0,0.0,1.0);
+        
+        //Specular Term
+        vec4 Is = vec4(0.0,0.0,0.0,1.0);
+        
+        
+        Id = uLightDiffuse* uMaterialDiffuse * lambertTerm; //add diffuse term
+        
+        vec3 eyeVec = -vec3(vertex.xyz);
+        vec3 E = normalize(eyeVec);
+        vec3 R = reflect(L, N);
+        float specular = pow(max(dot(R, E), 0.0), uShininess );
+        
+        Is = uLightSpecular * uMaterialSpecular * specular; //add specular term
+
+        
+        //Final color
+        vFinalColor = Ia + Id + Is;
+        vFinalColor.a = 1.0;
+
+        //Transformed vertex position
+        gl_Position = uPMatrix * vertex;
     }
 </script>
 
@@ -38,12 +91,19 @@ var gl = null; // WebGL context
 var prg = null; // The program (shaders)
 var c_width = 0; // Variable to store the width of the canvas
 var c_height = 0; // Variable to store the height of the canvas
+var clearColor = [0,0,0,1];
 
 var modelVertexBuffer = null; //The vertex buffer for the model
 var modelIndexBuffer = null; // The index buffer for the model
+var modelNormalsBuffer;
 
 var mvMatrix = mat4.create(); // The Model-View matrix
 var pMatrix = mat4.create(); // The projection matrix
+var nMatrix = mat4.create(); // The normal matrix
+
+var vertices;
+var indices;
+var normals;
 
 var model = {};
 var modelLoaded = false;
@@ -80,11 +140,37 @@ function initProgram() {
 
     gl.useProgram(prg);
 
-    prg.vertexPositionAttribute = gl.getAttribLocation(prg, 'aVertexPosition');
-    prg.pMatrixUniform = gl.getUniformLocation(prg, 'uPMatrix');
-    prg.mvMatrixUniform = gl.getUniformLocation(prg, 'uMVMatrix');
-    prg.modelColor = gl.getUniformLocation(prg, 'modelColor'); // Surprise! 
+    prg.aVertexPosition    = gl.getAttribLocation(prg, "aVertexPosition");
+    prg.aVertexNormal      = gl.getAttribLocation(prg, "aVertexNormal");
+
+    prg.uPMatrix           = gl.getUniformLocation(prg, "uPMatrix");
+    prg.uMVMatrix          = gl.getUniformLocation(prg, "uMVMatrix");
+    prg.uNMatrix           = gl.getUniformLocation(prg, "uNMatrix");
+    
+    prg.uMaterialAmbient    = gl.getUniformLocation(prg, "uMaterialAmbient");   
+    prg.uMaterialDiffuse    = gl.getUniformLocation(prg, "uMaterialDiffuse");
+    prg.uMaterialSpecular   = gl.getUniformLocation(prg, "uMaterialSpecular");
+    
+    prg.uShininess          = gl.getUniformLocation(prg, "uShininess");
+    
+    prg.uLightAmbient       = gl.getUniformLocation(prg, "uLightAmbient");
+    prg.uLightDiffuse       = gl.getUniformLocation(prg, "uLightDiffuse");
+    prg.uLightSpecular      = gl.getUniformLocation(prg, "uLightSpecular");
+    
+    prg.uLightDirection     = gl.getUniformLocation(prg, "uLightDirection");
 }		
+
+function initLights(){
+    gl.uniform3fv(prg.uLightDirection, [-0.25, -0.25, -0.25]);
+    gl.uniform4fv(prg.uLightAmbient,[0.03,0.03,0.03,1.0]);
+    gl.uniform4fv(prg.uLightDiffuse, [1.0,1.0,1.0,1.0]);    
+    gl.uniform4fv(prg.uLightSpecular, [1.0,1.0,1.0,1.0]);
+    
+    gl.uniform4fv(prg.uMaterialAmbient, [1.0,1.0,1.0,1.0]);
+    gl.uniform4fv(prg.uMaterialDiffuse, [46/256,99/256,191/256,1.0]);
+    gl.uniform4fv(prg.uMaterialSpecular, [1.0,1.0,1.0,1.0]);
+    gl.uniform1f(prg.uShininess, 10.0);
+}
 
 
 /**
@@ -117,8 +203,8 @@ function loadModel(filename){
 */
 function handleLoadedModel(filename,payload) {
     var lines = payload.split("\n");
-    var vertices = [];
-    var indices = [];
+    vertices = [];
+    indices = [];
 
     for (var i in lines) {
         var vals = lines[i].replace(/^\s+/, "").split(/\s+/);
@@ -141,7 +227,9 @@ function handleLoadedModel(filename,payload) {
 
     model.vertices = vertices;
     model.indices = indices;
-    model.color = [0.7, 0.1, 0.6];
+    model.color = [0.2, 0.9, 0.3];
+    normals = utils.calculateNormals(vertices, indices);
+    model.normals = normals;
 
     /*model = {
 "color" : [0.8,0.2,0.7],
@@ -155,38 +243,42 @@ function handleLoadedModel(filename,payload) {
 
     //model = payload; //save our model in a global variable so we can retrieve it in drawScene
 
-    alert(filename + ' has been retrieved from the server');
+    //alert(filename + ' has been retrieved from the server');
 
     modelVertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(model.vertices), gl.STATIC_DRAW);
     
+    modelNormalsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, modelNormalsBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(model.normals), gl.STATIC_DRAW);
     
     modelIndexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, modelIndexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(model.indices), gl.STATIC_DRAW);
+
+
     
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ARRAY_BUFFER,null);
-    gl.uniform3f(prg.modelColor,model.color[0], model.color[1],model.color[2]);
-    
+
     modelLoaded = true;
 }
 
-    function degToRad(degrees) {
-        return degrees * Math.PI / 180;
-    }
+function degToRad(degrees) {
+    return degrees * Math.PI / 180;
+}
 
-    var currentlyPressedKeys = {};
+var currentlyPressedKeys = {};
 
-    function handleKeyDown(event) {
-        currentlyPressedKeys[event.keyCode] = true;
-    }
+function handleKeyDown(event) {
+    currentlyPressedKeys[event.keyCode] = true;
+}
 
 
-    function handleKeyUp(event) {
-        currentlyPressedKeys[event.keyCode] = false;
-    }
+function handleKeyUp(event) {
+    currentlyPressedKeys[event.keyCode] = false;
+}
 
 
 function handleKeys() {
@@ -239,18 +331,42 @@ function drawScene(){
     mat4.rotate(mvMatrix, degToRad(-yaw), [0, 1, 0]);
     mat4.translate(mvMatrix, [-xPos, -yPos, -zPos]);
 
+    gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
+    gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+
     gl.uniformMatrix4fv(prg.pMatrixUniform, false, pMatrix);
     gl.uniformMatrix4fv(prg.mvMatrixUniform, false, mvMatrix);
-    
-    gl.enableVertexAttribArray(prg.vertexPositionAttribute);
 
-    if (!modelLoaded) return;
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexBuffer);
-    gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-    
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, modelIndexBuffer);
-    gl.drawElements(gl.TRIANGLES, model.indices.length, gl.UNSIGNED_SHORT,0); //Please notice how we use model here
+    mat4.set(mvMatrix, nMatrix);
+    mat4.inverse(nMatrix);
+    mat4.transpose(nMatrix);
+
+    gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);
+
+    try{
+
+        if (!modelLoaded)
+            return;
+        gl.enableVertexAttribArray(prg.aVertexPosition);
+        gl.enableVertexAttribArray(prg.aVertexNormal);
+                
+        //2. bind buffers 
+        gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexBuffer);
+        gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, modelNormalsBuffer);
+        gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, modelIndexBuffer);
+        gl.drawElements(gl.TRIANGLES, model.indices.length, gl.UNSIGNED_SHORT,0);         
+        //gl.drawElements(gl.LINES, indices.length, gl.UNSIGNED_SHORT,0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        
+    }
+    catch(err){
+        alert(err);
+    }
 }
 
     var lastTime = 0;
@@ -299,6 +415,8 @@ function runWebGLApp(){
     initProgram();
     //Loads a model from the web server using AJAX + JSON
     loadModel('models/sparse.obj');
+
+    initLights();
 
     document.onkeydown = handleKeyDown;
     document.onkeyup = handleKeyUp;
