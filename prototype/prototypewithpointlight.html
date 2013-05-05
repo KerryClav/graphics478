@@ -1,0 +1,463 @@
+<html>
+
+<head>
+
+
+<!-- JavaScript Libraries //-->
+<script type='text/javascript' src='js/gl-matrix-min.js'></script>
+<script type='text/javascript' src='js/utils.js'></script>
+
+<!-- Fragment Shader //-->
+<script id='shader-fs' type='x-shader/x-fragment'>
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+
+    varying vec4 vFinalColor;
+
+    void main(void)
+    {
+        gl_FragColor = vFinalColor;
+    }
+</script>
+
+<!-- Vertex Shader //-->
+<script id='shader-vs' type='x-shader/x-vertex'>
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+
+    uniform mat4 uMVMatrix; 
+    uniform mat4 uPMatrix; 
+    uniform mat4 uNMatrix;
+
+    uniform float uShininess;        //shininness
+    uniform vec3 uLightDirection;    //light direction
+
+    uniform vec4 uLightAmbient;      //light ambient property
+    uniform vec4 uLightDiffuse;      //light diffuse property 
+    uniform vec4 uLightSpecular;     //light specular property
+
+    uniform vec3 uPointLightPosition;     //point light position
+    varying vec3 vPointLightRay;	     //point light ray direction
+    uniform vec4 uPointLightDiffuse;      //light diffuse property 
+    uniform vec4 uPointLightSpecular;     //light specular property
+
+    uniform vec4 uMaterialAmbient;   //object ambient property
+    uniform vec4 uMaterialDiffuse;   //object diffuse property
+    uniform vec4 uMaterialSpecular;  //object specular property
+
+    varying vec4 vFinalColor;
+
+
+    void main(void) {
+        //Transformed vertex position
+        vec4 vertex = uMVMatrix * vec4(aVertexPosition, 1.0);
+        
+        //Transformed normal position
+        vec3 N = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
+        
+        //Invert and normalize light to calculate lambertTerm
+        vec3 L = normalize(uLightDirection);
+        
+        //Lambert's cosine law
+        float lambertTerm = clamp(dot(N,-L),0.0,1.0);
+        
+        //Ambient Term
+        vec4 Ia = uLightAmbient * uMaterialAmbient;
+        
+        //Diffuse Term
+        vec4 Id = vec4(0.0,0.0,0.0,1.0);
+        
+        //Specular Term
+        vec4 Is = vec4(0.0,0.0,0.0,1.0);
+
+	//Transformed light position 
+	vec4 light = uMVMatrix * vec4(uPointLightPosition,1.0);
+	//Light position
+	 vPointLightRay = normalize(vertex.xyz-light.xyz);
+	// point lamber term
+	float PointlambertTerm = clamp(dot(N,-vPointLightRay),0.0,1.0);
+        
+        Id = uLightDiffuse* uMaterialDiffuse * lambertTerm; //add diffuse term
+        Id = Id + uPointLightDiffuse* uMaterialDiffuse * PointlambertTerm; //add diffuse term
+
+        vec3 eyeVec = -vec3(vertex.xyz);
+        vec3 E = normalize(eyeVec);
+        vec3 R = reflect(L, N);
+        float specular = pow(max(dot(R, E), 0.0), uShininess );
+        
+        Is = uLightSpecular * uMaterialSpecular * specular; //add specular term
+        vec3 PointR = reflect(vPointLightRay, N);
+        float Pointspecular = pow(max(dot(PointR, E), 0.0), uShininess );
+        
+        Is = Is + uPointLightSpecular * uMaterialSpecular * Pointspecular; //add specular term
+
+        
+        //Final color
+        vFinalColor = Ia + Id + Is;
+        vFinalColor.a = 1.0;
+
+        //Transformed vertex position
+        gl_Position = uPMatrix * vertex;
+    }
+</script>
+
+<script id='code-js' type='text/javascript'>
+var gl = null; // WebGL context
+var prg = null; // The program (shaders)
+var c_width = 0; // Variable to store the width of the canvas
+var c_height = 0; // Variable to store the height of the canvas
+var clearColor = [0,0,0,1];
+
+var modelVertexBuffer = null; //The vertex buffer for the model
+var modelIndexBuffer = null; // The index buffer for the model
+var modelNormalsBuffer;
+
+var mvMatrix = mat4.create(); // The Model-View matrix
+var pMatrix = mat4.create(); // The projection matrix
+var nMatrix = mat4.create(); // The normal matrix
+
+var vertices;
+var indices;
+var normals;
+
+var model = {};
+var modelLoaded = false;
+
+var pitch = 0;
+var pitchRate = 0;
+
+var yaw = 0;
+var yawRate = 0;
+
+var xPos = 0;
+var yPos = 0.2;
+var zPos = 0;
+
+var speed = 0;
+
+/**
+* The program contains a series of instructions that tell the Graphic Processing Unit (GPU)
+* what to do with every vertex and fragment that we pass it. (more about this on chapter 3)
+* The vertex shader and the fragment shader together are called the program.
+*/
+function initProgram() {
+    var fgShader = utils.getShader(gl, 'shader-fs');
+    var vxShader = utils.getShader(gl, 'shader-vs');
+
+    prg = gl.createProgram();
+    gl.attachShader(prg, vxShader);
+    gl.attachShader(prg, fgShader);
+    gl.linkProgram(prg);
+
+    if (!gl.getProgramParameter(prg, gl.LINK_STATUS)) {
+        alert('Could not initialise shaders');
+    }
+
+    gl.useProgram(prg);
+
+    prg.aVertexPosition    = gl.getAttribLocation(prg, "aVertexPosition");
+    prg.aVertexNormal      = gl.getAttribLocation(prg, "aVertexNormal");
+
+    prg.uPMatrix           = gl.getUniformLocation(prg, "uPMatrix");
+    prg.uMVMatrix          = gl.getUniformLocation(prg, "uMVMatrix");
+    prg.uNMatrix           = gl.getUniformLocation(prg, "uNMatrix");
+    
+    prg.uMaterialAmbient    = gl.getUniformLocation(prg, "uMaterialAmbient");   
+    prg.uMaterialDiffuse    = gl.getUniformLocation(prg, "uMaterialDiffuse");
+    prg.uMaterialSpecular   = gl.getUniformLocation(prg, "uMaterialSpecular");
+    
+    prg.uShininess          = gl.getUniformLocation(prg, "uShininess");
+    
+    prg.uLightAmbient       = gl.getUniformLocation(prg, "uLightAmbient");
+    prg.uLightDiffuse       = gl.getUniformLocation(prg, "uLightDiffuse");
+    prg.uLightSpecular      = gl.getUniformLocation(prg, "uLightSpecular");
+
+    prg.uLightDirection     = gl.getUniformLocation(prg, "uLightDirection");
+    
+    prg.uPointLightDiffuse  = gl.getUniformLocation(prg, "uPointLightDiffuse");
+    prg.uPointLightSpecular = gl.getUniformLocation(prg, "uPointLightSpecular");
+    prg.uPointLightPosition = gl.getUniformLocation(prg, "uPointLightPosition");
+}		
+
+function initLights(){
+    gl.uniform3fv(prg.uLightDirection, [-0.25, -0.25, -0.25]);
+    gl.uniform4fv(prg.uLightAmbient,[0.03,0.03,0.03,1.0]);
+    gl.uniform4fv(prg.uLightDiffuse, [1.0,1.0,1.0,1.0]);    
+    gl.uniform4fv(prg.uLightSpecular, [1.0,1.0,1.0,1.0]);
+    
+    gl.uniform3fv(prg.uLightPosition, [0.0, 0.3, 0.0]);
+    gl.uniform4fv(prg.uPointLightDiffuse, [1.0,1.0,0.0,1.0]);    
+    gl.uniform4fv(prg.uPointLightSpecular, [1.0,1.0,0.0,1.0]);
+    
+    gl.uniform4fv(prg.uMaterialAmbient, [1.0,1.0,1.0,1.0]);
+    gl.uniform4fv(prg.uMaterialDiffuse, [46/256,99/256,191/256,1.0]);
+    gl.uniform4fv(prg.uMaterialSpecular, [1.0,1.0,1.0,1.0]);
+    gl.uniform1f(prg.uShininess, 10.0);
+}
+
+
+/**
+* Creates an AJAX request to load a model asynchronously
+*/
+function loadModel(filename){
+    var request = new XMLHttpRequest();
+    var resource = "http://"+document.domain+ filename
+    request.open("GET",filename);
+    request.onreadystatechange = function() {
+        console.info(request.readyState +' - '+request.status); 
+      if (request.readyState == 4) {
+	    if(request.status == 200) { //OK
+			//handleLoadedModel(filename,JSON.parse(request.responseText));
+            handleLoadedModel(filename, request.responseText);
+		 } else if (document.domain.length == 0 && request.status == 0){ //OK but local, no web server
+            handleLoadedModel(filename, request.responseText);
+        //    handleLoadedModel(filename,JSON.parse(request.responseText));
+        } else{
+            alert ('There was a problem loading the file :' + filename);
+            alert ('HTML error code: ' + request.status);
+		}
+	  }
+    }
+    request.send();
+}
+
+/**
+* Creates the buffers that contain the geometry of the model
+*/
+function handleLoadedModel(filename,payload) {
+    var lines = payload.split("\n");
+    vertices = [];
+    indices = [];
+
+    for (var i in lines) {
+        var vals = lines[i].replace(/^\s+/, "").split(/\s+/);
+
+        if (vals[0] == "#") {
+            continue;
+        } else if (vals[0] == "v") {
+            vertices.push(parseFloat(vals[1]));
+            vertices.push(parseFloat(vals[2]));
+            vertices.push(parseFloat(vals[3]));
+        } else if (vals[0] == 'f') {
+            var v1 = vals[1].split('/');
+            var v2 = vals[2].split('/');
+            var v3 = vals[3].split('/');
+            indices.push(parseInt(v1[0] - 1));
+            indices.push(parseInt(v2[0] - 1));
+            indices.push(parseInt(v3[0] - 1));
+        }
+    }
+
+    model.vertices = vertices;
+    model.indices = indices;
+    model.color = [0.2, 0.9, 0.3];
+    normals = utils.calculateNormals(vertices, indices);
+    model.normals = normals;
+
+    /*model = {
+"color" : [0.8,0.2,0.7],
+"vertices" : [-10.000000, 0.000998, 10.000000,
+10.000000, 0.000998, 10.000000,
+10.000000, 0.001002, -10.000000,
+-10.000000, 0.001002, -10.000000],
+"indices" : [0,1,2, 3, 0, 2]
+};*/
+
+
+    //model = payload; //save our model in a global variable so we can retrieve it in drawScene
+
+    //alert(filename + ' has been retrieved from the server');
+
+    modelVertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(model.vertices), gl.STATIC_DRAW);
+    
+    modelNormalsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, modelNormalsBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(model.normals), gl.STATIC_DRAW);
+    
+    modelIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, modelIndexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(model.indices), gl.STATIC_DRAW);
+
+
+    
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    gl.bindBuffer(gl.ARRAY_BUFFER,null);
+
+    modelLoaded = true;
+}
+
+function degToRad(degrees) {
+    return degrees * Math.PI / 180;
+}
+
+var currentlyPressedKeys = {};
+
+function handleKeyDown(event) {
+    currentlyPressedKeys[event.keyCode] = true;
+}
+
+
+function handleKeyUp(event) {
+    currentlyPressedKeys[event.keyCode] = false;
+}
+
+
+function handleKeys() {
+    if (currentlyPressedKeys[38]) {
+        // Page Up
+        pitchRate = 0.1;
+    } else if (currentlyPressedKeys[40]) {
+        // Page Down
+        pitchRate = -0.1;
+    } else {
+        pitchRate = 0;
+    }
+
+    if (currentlyPressedKeys[37] || currentlyPressedKeys[65]) {
+        // Left cursor key or A
+        yawRate = 0.1;
+    } else if (currentlyPressedKeys[39] || currentlyPressedKeys[68]) {
+        // Right cursor key or D
+        yawRate = -0.1;
+    } else {
+        yawRate = 0;
+    }
+
+    if (/*currentlyPressedKeys[38] || */currentlyPressedKeys[87]) {
+        // Up cursor key or W
+        speed = 0.003;
+    } else if (/*currentlyPressedKeys[40] || */currentlyPressedKeys[83]) {
+        // Down cursor key
+        speed = -0.003;
+    } else {
+        speed = 0;
+    }
+}
+
+/**
+* Draws the scene
+*/
+function drawScene(){
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.enable(gl.DEPTH_TEST);
+
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.viewport(0,0,c_width, c_height);
+
+    mat4.perspective(45, c_width / c_height, 0.1, 10000.0, pMatrix);
+    mat4.identity(mvMatrix);	
+    //mat4.translate(mvMatrix, [0.0, 0.1, -12.0]);
+    mat4.rotate(mvMatrix, degToRad(-pitch), [1, 0, 0]);
+    mat4.rotate(mvMatrix, degToRad(-yaw), [0, 1, 0]);
+    mat4.translate(mvMatrix, [-xPos, -yPos, -zPos]);
+
+    gl.uniformMatrix4fv(prg.uMVMatrix, false, mvMatrix);
+    gl.uniformMatrix4fv(prg.uPMatrix, false, pMatrix);
+
+    gl.uniformMatrix4fv(prg.pMatrixUniform, false, pMatrix);
+    gl.uniformMatrix4fv(prg.mvMatrixUniform, false, mvMatrix);
+
+    mat4.set(mvMatrix, nMatrix);
+    mat4.inverse(nMatrix);
+    mat4.transpose(nMatrix);
+
+    gl.uniformMatrix4fv(prg.uNMatrix, false, nMatrix);
+
+    try{
+
+        if (!modelLoaded)
+            return;
+        gl.enableVertexAttribArray(prg.aVertexPosition);
+        gl.enableVertexAttribArray(prg.aVertexNormal);
+                
+        //2. bind buffers 
+        gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexBuffer);
+        gl.vertexAttribPointer(prg.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, modelNormalsBuffer);
+        gl.vertexAttribPointer(prg.aVertexNormal,3,gl.FLOAT, false, 0,0);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, modelIndexBuffer);
+        gl.drawElements(gl.TRIANGLES, model.indices.length, gl.UNSIGNED_SHORT,0);         
+        //gl.drawElements(gl.LINES, indices.length, gl.UNSIGNED_SHORT,0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        
+    }
+    catch(err){
+        alert(err);
+    }
+}
+
+    var lastTime = 0;
+    // Used to make us "jog" up and down as we move forward.
+    var joggingAngle = 0;
+
+    function animate() {
+        var timeNow = new Date().getTime();
+        if (lastTime != 0) {
+            var elapsed = timeNow - lastTime;
+
+            if (speed != 0) {
+                xPos -= Math.sin(degToRad(yaw)) * speed * elapsed;
+                zPos -= Math.cos(degToRad(yaw)) * speed * elapsed;
+
+                joggingAngle += elapsed * 0.6; // 0.6 "fiddle factor" - makes it feel more realistic :-)
+                yPos = Math.sin(degToRad(joggingAngle)) / 20 + 0.1
+            }
+
+            yaw += yawRate * elapsed;
+            pitch += pitchRate * elapsed;
+
+        }
+        lastTime = timeNow;
+    }
+
+
+/**
+* Render Loop
+*/
+function renderLoop() {
+    requestAnimFrame(renderLoop);
+    handleKeys();
+    drawScene();
+    animate();
+}
+
+/**
+* Executes the WebGL application
+* This function is invoked on the onLoad event of the web page. 
+*/
+function runWebGLApp(){
+    //Obtains a WebGL context
+    gl = utils.getGLContext('canvas-element-id');
+    //Initializes the program (shaders). More about this on chapter 3!
+    initProgram();
+    //Loads a model from the web server using AJAX + JSON
+    loadModel('models/sparse.obj');
+
+    initLights();
+
+    document.onkeydown = handleKeyDown;
+    document.onkeyup = handleKeyUp;
+    //Renders the scene!
+    renderLoop();
+}
+</script>
+</head>
+
+
+<body onLoad='runWebGLApp()'>
+<div id='contents'>
+    <div id='canvasContainer'>
+        <canvas id='canvas-element-id' width='800' height='800'>
+            Your browser does not support the HTML5 canvas element.
+        </canvas>
+    </div>
+</div>
+</body>
+</html>
