@@ -69,7 +69,7 @@ CameraInteractor.prototype.onKeyDown = function(ev){
         this.camera.speed = 0.003;
     } else if (this.key == 83) { //n
         this.camera.speed = -0.003;
-    }    
+    }
 }
 
 CameraInteractor.prototype.onKeyUp = function(ev){

@@ -153,7 +153,7 @@ transforms = null,
 cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11,
-translateLights = false;
+translateLights = true;
 
 
 
@@ -188,26 +188,26 @@ function configure(){
     transforms.init();
 
     light1 = new Light('far-left');
-	light1.setPosition([-6,1,-6]);
-	light1.setDiffuse([0.8,0.8,0.8]);
+	light1.setPosition([-4,1,-4]);
+	light1.setDiffuse([1,1,1]);
     light1.setAmbient([1,1,1]);
     light1.setSpecular([0,0,0]);
 	
 	light2 = new Light('far-right');
-	light2.setPosition([6,1,-6]);
-	light2.setDiffuse([0.4,0.4,0.4]);
+	light2.setPosition([4,1,-4]);
+	light2.setDiffuse([1,1,1]);
     light2.setAmbient([1,1,1]);
     light2.setSpecular([0,0,0]);
 	
 	light3 = new Light('near-left');
-	light3.setPosition([-6,1,6]);
-	light3.setDiffuse([0.4,0.4,0.4]);
+	light3.setPosition([-4,1,4]);
+	light3.setDiffuse([1,1,1]);
     light3.setAmbient([1,1,1]);
     light3.setSpecular([0,0,0]);
     
     light4 = new Light('near-right');
-    light4.setPosition([6,1,6]);
-    light4.setDiffuse([0.4,0.4,0.4]);
+    light4.setPosition([4,1,4]);
+    light4.setDiffuse([1,1,1]);
     light4.setAmbient([1,1,1]);
     light4.setSpecular([0,0,0]);
     
@@ -256,38 +256,18 @@ function configure(){
 
 }
 
-function loadSceneGeometry(){
-    Scene.objects = [];
-    for(var i = 1; i <= 136; i+=1) {
-    //for(var i = 1; i <= 604; i+=1) {
-        //Scene.loadObject('models/scene/part'+i+'.json');
-        Scene.loadObject('models/test/part'+i+'.json');
-        //Scene.loadObject('models/scene_big/part'+i+'.json');
-
-    }
-}
-
-
 function load(){
-    /*Floor.build(80,2);
-    Floor.Ka = [1,1,1];
-    Floor.Kd = [0.8,0.1,0.6]
-    Floor.Ks = [1,1,1];
-    Floor.Ni = 1;
-    Floor.Ns = 1;
-    Floor.d = 1.0;
-    Floor.illum = 1;
-   
-    Floor.visible = false;
-    
-    Scene.addObject(Floor);*/
 
-    // Load house, trees, other scene objects.
-    loadSceneGeometry();
+    Scene.loadObjectByParts('models/test/part', 'scene', 136);
+    Scene.loadObject('models/jar_str8.json');
 
     // TODO: load fireflies!
 }
 
+
+function degToRad(degrees) {
+    return degrees * Math.PI / 180;
+}
 
 function render(){
     gl.viewport(0, 0, c_width, c_height);
@@ -295,13 +275,29 @@ function render(){
     
     transforms.updatePerspective();
 
-    try{
+    try {
         for (var i = 0; i < Scene.objects.length; i++){
             
             var object = Scene.objects[i];
 			if (object.visible != undefined && !object.visible) continue;
 			transforms.calculateModelView();           
             transforms.push();
+
+            if (object.alias == 'jar') {
+                var pos = camera.position;
+                var cam_n = camera.normal;
+                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+
+                // Not quite right :( Can you fix this? I figured out the roations
+                // to keep the orientation of the jar correct, but now it moves
+                // in front of the camera :/
+                mat4.translate(transforms.mvMatrix, pos);
+                mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+
+                //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
+                //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
+            }
+
             transforms.setMatrixUniforms();
             transforms.pop();
             
@@ -355,8 +351,7 @@ function render(){
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
         }
-    }
-    catch(err){
+    } catch(err) {
         alert(err);
         console.error(err.description);
     }
@@ -366,7 +361,7 @@ function render(){
 
 
 var app;
-function runShowRoom(){
+function runGame(){
     app = new WebGLApp("the-canvas");
     app.configureGLHook = configure;
     app.loadSceneHook   = load;
@@ -376,7 +371,7 @@ function runShowRoom(){
 </script>
 </head>
 
-<body onLoad='runShowRoom()'>
+<body onLoad='runGame()'>
 
 <div id="content">
     <canvas id='the-canvas' width='1000' height='800'></canvas>
