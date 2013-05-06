@@ -4,8 +4,12 @@ function Light(name){
 	this.ambient = [0.0,0.0,0.0,0.0];
 	this.diffuse = [0.0,0.0,0.0,0.0];
 	this.specular = [0.0,0.0,0.0,0.0];
+	this.is_caught = false;
 }
 
+Light.prototype.setIsCaught = function(p){
+	this.is_caught = p;
+}
 Light.prototype.setPosition = function(p){
 	this.position = p.slice(0);
 }

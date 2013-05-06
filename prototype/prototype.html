@@ -37,6 +37,11 @@
     uniform vec4 uLightDiffuse;      //light diffuse property 
     uniform vec4 uLightSpecular;     //light specular property
 
+    uniform vec3 uPointLightPosition;     //point light position
+    varying vec3 vPointLightRay;	     //point light ray direction
+    uniform vec4 uPointLightDiffuse;      //light diffuse property 
+    uniform vec4 uPointLightSpecular;     //light specular property
+
     uniform vec4 uMaterialAmbient;   //object ambient property
     uniform vec4 uMaterialDiffuse;   //object diffuse property
     uniform vec4 uMaterialSpecular;  //object specular property
@@ -52,7 +57,7 @@
         vec3 N = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
         
         //Invert and normalize light to calculate lambertTerm
-        vec3 L = normalize(uLightDirection); 
+        vec3 L = normalize(uLightDirection);
         
         //Lambert's cosine law
         float lambertTerm = clamp(dot(N,-L),0.0,1.0);
@@ -65,16 +70,27 @@
         
         //Specular Term
         vec4 Is = vec4(0.0,0.0,0.0,1.0);
-        
+
+	//Transformed light position 
+	vec4 light = uMVMatrix * vec4(uPointLightPosition,1.0);
+	//Light position
+	 vPointLightRay = normalize(vertex.xyz-light.xyz);
+	// point lamber term
+	float PointlambertTerm = clamp(dot(N,-vPointLightRay),0.0,1.0);
         
         Id = uLightDiffuse* uMaterialDiffuse * lambertTerm; //add diffuse term
-        
+        Id = Id + uPointLightDiffuse* uMaterialDiffuse * PointlambertTerm; //add diffuse term
+
         vec3 eyeVec = -vec3(vertex.xyz);
         vec3 E = normalize(eyeVec);
         vec3 R = reflect(L, N);
         float specular = pow(max(dot(R, E), 0.0), uShininess );
         
         Is = uLightSpecular * uMaterialSpecular * specular; //add specular term
+        vec3 PointR = reflect(vPointLightRay, N);
+        float Pointspecular = pow(max(dot(PointR, E), 0.0), uShininess );
+        
+        Is = Is + uPointLightSpecular * uMaterialSpecular * Pointspecular; //add specular term
 
         
         //Final color
@@ -156,8 +172,12 @@ function initProgram() {
     prg.uLightAmbient       = gl.getUniformLocation(prg, "uLightAmbient");
     prg.uLightDiffuse       = gl.getUniformLocation(prg, "uLightDiffuse");
     prg.uLightSpecular      = gl.getUniformLocation(prg, "uLightSpecular");
-    
+
     prg.uLightDirection     = gl.getUniformLocation(prg, "uLightDirection");
+    
+    prg.uPointLightDiffuse  = gl.getUniformLocation(prg, "uPointLightDiffuse");
+    prg.uPointLightSpecular = gl.getUniformLocation(prg, "uPointLightSpecular");
+    prg.uPointLightPosition = gl.getUniformLocation(prg, "uPointLightPosition");
 }		
 
 function initLights(){
@@ -165,6 +185,10 @@ function initLights(){
     gl.uniform4fv(prg.uLightAmbient,[0.03,0.03,0.03,1.0]);
     gl.uniform4fv(prg.uLightDiffuse, [1.0,1.0,1.0,1.0]);    
     gl.uniform4fv(prg.uLightSpecular, [1.0,1.0,1.0,1.0]);
+    
+    gl.uniform3fv(prg.uLightPosition, [0.0, 0.3, 0.0]);
+    gl.uniform4fv(prg.uPointLightDiffuse, [1.0,1.0,0.0,1.0]);    
+    gl.uniform4fv(prg.uPointLightSpecular, [1.0,1.0,0.0,1.0]);
     
     gl.uniform4fv(prg.uMaterialAmbient, [1.0,1.0,1.0,1.0]);
     gl.uniform4fv(prg.uMaterialDiffuse, [46/256,99/256,191/256,1.0]);
