@@ -4,11 +4,13 @@ function Light(name){
 	this.ambient = [0.0,0.0,0.0,0.0];
 	this.diffuse = [0.0,0.0,0.0,0.0];
 	this.specular = [0.0,0.0,0.0,0.0];
-	this.is_caught = false;
+	// is_caught[0] specifies whether or not the firefly is caught
+	// is_caught[1] specifies how much light the firefly has left
+	this.is_caught = [0.0, 1.0];
 }
 
 Light.prototype.setIsCaught = function(p){
-	this.is_caught = p;
+	this.is_caught = p.slice(0);
 }
 Light.prototype.setPosition = function(p){
 	this.position = p.slice(0);
