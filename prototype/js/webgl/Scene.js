@@ -21,6 +21,8 @@ var Scene = {
                     var o = JSON.parse(request.responseText);
                     if (alias == null && o.alias == null){
                         o.alias = 'undefined'
+                    } else if (o.alias == null && alias) {
+                        o.alias = alias;
                     }
                     o.remote = true;
                     Scene.addObject(o,attributes,callback);

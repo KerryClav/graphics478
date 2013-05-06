@@ -234,54 +234,48 @@ function configure(){
 
 }
 
-function loadSceneGeometry(){
-    Scene.objects = [];
-    for(var i = 1; i <= 136; i+=1) {
-    //for(var i = 1; i <= 604; i+=1) {
-        //Scene.loadObject('models/scene/part'+i+'.json');
-        Scene.loadObject('models/test/part'+i+'.json');
-        //Scene.loadObject('models/scene_big/part'+i+'.json');
-
-    }
-    //trying to load the spheres as markers to point lights
-    //Scene.loadObject('models/geometry/smallsph.json', 'smallsphere');
-}
-
-
 function load(){
-    /*Floor.build(80,2);
-    Floor.Ka = [1,1,1];
-    Floor.Kd = [0.8,0.1,0.6]
-    Floor.Ks = [1,1,1];
-    Floor.Ni = 1;
-    Floor.Ns = 1;
-    Floor.d = 1.0;
-    Floor.illum = 1;
-   
-    Floor.visible = false;
-    
-    Scene.addObject(Floor);*/
 
-    // Load house, trees, other scene objects.
-    loadSceneGeometry();
+    Scene.loadObjectByParts('models/test/part', 'scene', 136);
+    Scene.loadObject('models/jar_str8.json');
 
     // TODO: load fireflies!
 }
 
+
+function degToRad(degrees) {
+    return degrees * Math.PI / 180;
+}
 
 function render(){
     gl.viewport(0, 0, c_width, c_height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
     transforms.updatePerspective();
-     console.log('hi');
-    try{
+
+    try {
         for (var i = 0; i < Scene.objects.length; i++){
             
             var object = Scene.objects[i];
 			if (object.visible != undefined && !object.visible) continue;
 			transforms.calculateModelView();           
             transforms.push();
+
+            if (object.alias == 'jar') {
+                var pos = camera.position;
+                var cam_n = camera.normal;
+                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+
+                // Not quite right :( Can you fix this? I figured out the roations
+                // to keep the orientation of the jar correct, but now it moves
+                // in front of the camera :/
+                mat4.translate(transforms.mvMatrix, pos);
+                mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+
+                //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
+                //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
+            }
+
             transforms.setMatrixUniforms();
             transforms.pop();
             
@@ -335,8 +329,7 @@ function render(){
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
         }
-    }
-    catch(err){
+    } catch(err) {
         alert(err);
         console.error(err.description);
     }
@@ -346,7 +339,7 @@ function render(){
 
 
 var app;
-function runShowRoom(){
+function runGame(){
     app = new WebGLApp("the-canvas");
     app.configureGLHook = configure;
     app.loadSceneHook   = load;
@@ -356,7 +349,7 @@ function runShowRoom(){
 </script>
 </head>
 
-<body onLoad='runShowRoom()'>
+<body onLoad='runGame()'>
 
 <div id="content">
     <canvas id='the-canvas' width='1000' height='800'></canvas>
