@@ -230,7 +230,8 @@ function configure(){
                     "illum",
                     "uTranslateLights",
 					"uSampler",
-                    "uTextured"
+                    "uTextured",
+                    "uIscaught"
                     ];
 					
 	Program.load(attributeList, uniformList);
@@ -240,15 +241,18 @@ function configure(){
     gl.uniform3fv(Program.uLa ,     Lights.getArray('ambient'));
     gl.uniform3fv(Program.uLd,      Lights.getArray('diffuse'));
     gl.uniform3fv(Program.uLs,      Lights.getArray('specular'));
+
+    debugger;
     gl.uniform1iv(Program.uIsCaught, Lights.getArray('is_caught'));
     
     // debugging
     console.log('iscaught array is ' + Lights.getArray('is_caught'));
     console.log(gl.getUniform(prg, Program.uIsCaught));
-                console.log('lights array is ' + Lights.getArray('position'));
-                console.log('lights diffuse is ' + Lights.getArray('diffuse'));
-                console.log(gl.getUniform(prg, Program.uLd));
-    
+                //console.log('lights array is ' + Lights.getArray('position'));
+                //console.log('lights diffuse is ' + Lights.getArray('diffuse'));
+                //console.log(gl.getUniform(prg, Program.uLd));
+                    debugger;
+
     gl.uniform3fv(Program.uKa ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKd ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKs ,     [1.0,1.0,1.0]);
@@ -297,7 +301,7 @@ function render(){
                 // to keep the orientation of the jar correct, but now it moves
                 // in front of the camera :/
                 mat4.translate(transforms.mvMatrix, pos);
-                console.log('jar position is ' + pos);
+                //console.log('jar position is ' + pos);
                 mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
                 
                 //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
