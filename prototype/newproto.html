@@ -19,7 +19,7 @@
 
 <script id="shader-vs" type="x-shader/x-vertex">
 
-const int NUM_LIGHTS = 4;
+const int NUM_LIGHTS = 4; //Globals.NUM_FIREFLIES;
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
@@ -29,7 +29,7 @@ uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uNMatrix;
 
-uniform bool uTranslateLights;
+uniform bool uIsCaught[NUM_LIGHTS];
 uniform vec3 uLightPosition[NUM_LIGHTS];
 
 varying vec3 vNormal;
@@ -43,20 +43,16 @@ void main(void) {
      vNormal = vec3(uNMatrix * vec4(aVertexNormal, 1.0));
      vec4 lightPosition = vec4(0.0);
      
-     if (uTranslateLights){
-         for(int i=0; i < NUM_LIGHTS; i++){
-           lightPosition =   uMVMatrix * vec4(uLightPosition[i], 1.0);
+     for(int i=0; i < NUM_LIGHTS; i++){
+          lightPosition = vec4(uLightPosition[i], 1.0);
+          if (!uIsCaught[i]){
+               lightPosition =   uMVMatrix * lightPosition;
+          }
+          
            vLightRay[i] = vertex.xyz - lightPosition.xyz;
            vEye[i] = -vec3(vertex.xyz);
-         }
      }    
-     else {
-        for(int i=0; i < NUM_LIGHTS; i++){
-          lightPosition = vec4(uLightPosition[i], 1.0);
-          vLightRay[i] = vertex.xyz - lightPosition.xyz;
-          vEye[i] = -vec3(vertex.xyz);
-        }
-    }
+ 
     gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 }	
 </script>
@@ -119,7 +115,7 @@ void main(void) {
         for(int i = 0; i < NUM_LIGHTS; i++){	
             L = normalize(vLightRay[i]);	
             N = normalize(vNormal);	
-            COLOR += (uLa[i] * uKa) + (uLd[i] * uKd * clamp(dot(N, -L),0.0,1.0));
+            COLOR += (uLa[i] * uKa) + (uLd[i] * uKd * clamp(dot(N, -L),0.0,1.0) * calculateAttenuation(vLightRay[i]));
         }   
         gl_FragColor =  vec4(COLOR,d);
         return;
@@ -132,7 +128,7 @@ void main(void) {
             L = normalize(vLightRay[i]);
             R = reflect(L, N);
             COLOR += (uLa[i] * uKa);
-            COLOR += (uLd[i] * uKd * clamp(dot(N,-L),0.0,1.0));// * calculateAttenuation(vLightRay[i]));
+            COLOR += (uLd[i] * uKd * clamp(dot(N,-L),0.0,1.0) * calculateAttenuation(vLightRay[i]));
             COLOR += (uLs[i] * uKs * pow( max(dot(R, E), 0.0), uNs) * 4.0);
         }
         gl_FragColor =  vec4(COLOR,d);
@@ -144,10 +140,8 @@ void main(void) {
 <script type="text/javascript">
 
 var camera = null,
-light1 = null,
-light2 = null,
-light3 = null,
-light4 = null,
+numFireflies = 4,  // make sure to change the constant NUM_LIGHTS in the shaders too!
+ptlights = [];
 transforms = null,
 
 cameraHome = [0.0,0.4,7],
@@ -187,36 +181,20 @@ function configure(){
     //init transforms
     transforms.init();
 
-    light1 = new Light('far-left');
-	light1.setPosition([-6,1,-6]);
-	light1.setDiffuse([0.8,0.8,0.8]);
-    light1.setAmbient([1,1,1]);
-    light1.setSpecular([0,0,0]);
-	
-	light2 = new Light('far-right');
-	light2.setPosition([6,1,-6]);
-	light2.setDiffuse([0.4,0.4,0.4]);
-    light2.setAmbient([1,1,1]);
-    light2.setSpecular([0,0,0]);
-	
-	light3 = new Light('near-left');
-	light3.setPosition([-6,1,6]);
-	light3.setDiffuse([0.4,0.4,0.4]);
-    light3.setAmbient([1,1,1]);
-    light3.setSpecular([0,0,0]);
-    
-    light4 = new Light('near-right');
-    light4.setPosition([6,1,6]);
-    light4.setDiffuse([0.4,0.4,0.4]);
-    light4.setAmbient([1,1,1]);
-    light4.setSpecular([0,0,0]);
-    
-    
-	Lights.add(light1);
-	Lights.add(light2);
-    Lights.add(light3);	
-	Lights.add(light4);	
-    
+     // initialize firefly point lights
+     for(var i = 1; i <= numFireflies; i+=1) {
+          ptlights[i] = new Light('light'+i);
+          
+          ptlights[i].setPosition([(Math.random()*20-10,0.2,Math.random()*20-10)]);
+
+          //ptlights[i].setPosition([(10.0,0.2,10.0)]);
+          ptlights[i].setDiffuse([0.4,0.4,0.3]);
+          ptlights[i].setAmbient([0.0,0.0,0.0]);
+          ptlights[i].setSpecular([0.2,0.2,0.3]);
+          ptlights[i].setIsCaught(true);
+          Lights.add(ptlights[i]);
+     }
+
     //init Program
 	var attributeList = ["aVertexPosition",
 					"aVertexNormal",
@@ -236,7 +214,7 @@ function configure(){
                     "uNs",
                     "d",
                     "illum",
-                    "uTranslateLights"
+                    "uIsCaught"
 					];
 					
 	Program.load(attributeList, uniformList);
@@ -252,7 +230,7 @@ function configure(){
     gl.uniform3fv(Program.uKs ,     [1.0,1.0,1.0]);
     
     gl.uniform1f(Program.uNs, 1.0);
-    gl.uniform1i(Program.uTranslateLights, translateLights);
+    gl.uniform1i(Program.uIsCaught, Lights.getArray('is_caught'));
 
 }
 
@@ -265,6 +243,8 @@ function loadSceneGeometry(){
         //Scene.loadObject('models/scene_big/part'+i+'.json');
 
     }
+    //trying to load the spheres as markers to point lights
+    //Scene.loadObject('models/geometry/smallsph.json', 'smallsphere');
 }
 
 
@@ -294,7 +274,7 @@ function render(){
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
     transforms.updatePerspective();
-
+     console.log('hi');
     try{
         for (var i = 0; i < Scene.objects.length; i++){
             
