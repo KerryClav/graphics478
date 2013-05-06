@@ -30,7 +30,7 @@ uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uNMatrix;
 
-uniform int uIsCaught[NUM_LIGHTS];
+uniform vec2 uIsCaught[NUM_LIGHTS];
 uniform vec3 uLightPosition[NUM_LIGHTS];
 
 varying vec3 vNormal;
@@ -46,10 +46,12 @@ void main(void) {
      vec4 lightPosition = vec4(0.0);
      
      for(int i=0; i < NUM_LIGHTS; i++){
+          
           lightPosition = vec4(uLightPosition[i], 1.0);
+          
           // if the fireflie is not caught (uIsCaught should be zero) then let
           // it move with the rest of the scene, otherwise don't translate it
-          if (uIsCaught[i] == 0){ 
+          if (uIsCaught[i][0] == 0.0){ 
                lightPosition  =  uMVMatrix * lightPosition;
           }
           
@@ -199,12 +201,12 @@ function configure(){
      for(var i = 1; i <= numFireflies; i+=1) {
           ptlights[i] = new Light('light'+i);
           
-          ptlights[i].setPosition([Math.random()*10-5,0.2,Math.random()*10-5]);
-          //ptlights[i].setPosition([5.0,0.4,5.0]);
+          //ptlights[i].setPosition([Math.random()*10-5,0.2,Math.random()*10-5]);
+          ptlights[i].setPosition([0.0,0.2,0.0]);
           ptlights[i].setDiffuse([0.2,0.15,0.0]);
           ptlights[i].setAmbient([0.0,0.0,0.0]);
           ptlights[i].setSpecular([0.05,0.05,0.05]);
-          ptlights[i].setIsCaught(1);
+          ptlights[i].setIsCaught([1.0, 1.0]);
           Lights.add(ptlights[i]);
      }
 
@@ -228,8 +230,8 @@ function configure(){
                     "uNs",
                     "d",
                     "illum",
-                    "uTranslateLights",
-					"uSampler",
+		    "uSampler",
+                    "uIsCaught",
                     "uTextured"
                     ];
 					
@@ -240,7 +242,7 @@ function configure(){
     gl.uniform3fv(Program.uLa ,     Lights.getArray('ambient'));
     gl.uniform3fv(Program.uLd,      Lights.getArray('diffuse'));
     gl.uniform3fv(Program.uLs,      Lights.getArray('specular'));
-    gl.uniform1iv(Program.uIsCaught, Lights.getArray('is_caught'));
+    gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
     
     // debugging
     console.log('iscaught array is ' + Lights.getArray('is_caught'));
@@ -263,7 +265,7 @@ function load(){
     Scene.loadObjectByParts('models/test/part', 'scene', 136);
     Scene.loadObject('models/jar_str8.json');
     Scene.loadObject('models/geometry/object.json');
-    //Scene.loadObject('models/stoneBrick.json');
+    Scene.loadObject('models/stoneBrick.json');
 
     // TODO: load fireflies!
 }
@@ -288,35 +290,34 @@ function render(){
 	    transforms.calculateModelView();           
             transforms.push();
             
-            if (object.alias == 'jar') {
-                var pos = camera.position;
-                var cam_n = camera.normal;
-                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
-                
-                // Not quite right :( Can you fix this? I figured out the roations
-                // to keep the orientation of the jar correct, but now it moves
-                // in front of the camera :/
-                mat4.translate(transforms.mvMatrix, pos);
-                console.log('jar position is ' + pos);
-                mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
-                
-                //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
-                //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
-            }
+            //if (object.alias == 'jar') {
+            //    var pos = camera.position;
+            //    var cam_n = camera.normal;
+            //    pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+            //    
+            //    // Not quite right :( Can you fix this? I figured out the roations
+            //    // to keep the orientation of the jar correct, but now it moves
+            //    // in front of the camera :/
+            //    mat4.translate(transforms.mvMatrix, pos);
+            //    console.log('jar position is ' + pos);
+            //    mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+            //    
+            //    //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
+            //    //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
+            //}
             
 	    if (object.alias == 'tracker'){
                 mat4.translate(transforms.mvMatrix, Lights.get(0).position); //gl.getUniform(prg, Program.uLightPosition)[0:2]);
                 console.log('lightposition is ' + Lights.get(0).position); //gl.getUniform(prg, Program.uLightPosition)[0:2]);
             }
             
-
-            /*if (object.alias == 'stone') {
+            if (object.alias == 'stone') {
                 var pos = camera.position;
                 var cam_n = camera.normal;
                 pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
                 mat4.translate(transforms.mvMatrix, pos);
                 mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
-            }*/
+            }
 
 
             transforms.setMatrixUniforms();
