@@ -14,12 +14,11 @@ var Scene = {
     
         request.onreadystatechange = function() {
             if (request.readyState == 4) {
-                if(request.status == 404) {
+                if (request.status == 404) {
                     console.info(filename + ' does not exist');
-                }
-                else {
+                } else {
                     var o = JSON.parse(request.responseText);
-                    if (alias == null && o.alias == null){
+                    if (alias == null && o.alias == null) {
                         o.alias = 'undefined'
                     } else if (o.alias == null && alias) {
                         o.alias = alias;
@@ -28,7 +27,7 @@ var Scene = {
                     Scene.addObject(o,attributes,callback);
                 }
             }
-        }
+        };
         request.send();
     },
     
@@ -59,6 +58,7 @@ var Scene = {
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferObject);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(object.vertices), gl.STATIC_DRAW);
           
+        // TODO FIX TO USE PREGENERATED NORMALS
         var normalBufferObject = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, normalBufferObject);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(Utils.calculateNormals(object.vertices, object.indices)), gl.STATIC_DRAW);
@@ -80,8 +80,8 @@ var Scene = {
 			object.tbo = textureBufferObject;
 		}
         
-        if (object.image){
-            object.texture = new Texture(object.image);
+        if (object.map_Kd){
+            object.texture = new Texture(object.map_Kd);
         }
     
         var indexBufferObject = gl.createBuffer();
