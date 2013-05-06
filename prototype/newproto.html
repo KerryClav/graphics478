@@ -269,7 +269,6 @@ function load(){
      for(var i = 1; i <= numFireflies; i+=1) {
           var str = 'firefly' + i;
           Scene.loadObject('models/firefly.json', str);
-         // console.log('int parsed is ' + parseInt(str.match(/\d+/)[0], 10));
      }
      
     //Scene.loadObject('models/stoneBrick.json');
@@ -304,7 +303,6 @@ function render(){
                 // to keep the orientation of the jar correct, but now it moves
                 // in front of the camera :/
                 mat4.translate(transforms.mvMatrix, pos);
-                console.log('jar position is ' + pos);
                 mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
                 
                 //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
@@ -312,7 +310,6 @@ function render(){
             }
             
 	    if (object.alias.search('firefly') >= 0) {
-                console.log('int is ' + parseInt(object.alias.match(/\d+/)[0], 10));
                 mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10) - 1).position);
             }
             
