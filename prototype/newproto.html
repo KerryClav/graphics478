@@ -30,7 +30,7 @@ uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uNMatrix;
 
-uniform int uIsCaught[NUM_LIGHTS];
+uniform vec2 uIsCaught[NUM_LIGHTS];
 uniform vec3 uLightPosition[NUM_LIGHTS];
 
 varying vec3 vNormal;
@@ -46,10 +46,12 @@ void main(void) {
      vec4 lightPosition = vec4(0.0);
      
      for(int i=0; i < NUM_LIGHTS; i++){
+          
           lightPosition = vec4(uLightPosition[i], 1.0);
+          
           // if the fireflie is not caught (uIsCaught should be zero) then let
           // it move with the rest of the scene, otherwise don't translate it
-          if (uIsCaught[i] == 0){ 
+          if (uIsCaught[i][0] == 0.0){ 
                lightPosition  =  uMVMatrix * lightPosition;
           }
           
@@ -199,12 +201,12 @@ function configure(){
      for(var i = 1; i <= numFireflies; i+=1) {
           ptlights[i] = new Light('light'+i);
           
-          ptlights[i].setPosition([Math.random()*10-5,0.2,Math.random()*10-5]);
-          //ptlights[i].setPosition([5.0,0.4,5.0]);
+          ptlights[i].setPosition([Math.random()*10-5,0.1,Math.random()*10-5]);
+          //ptlights[i].setPosition([0.0,0.2,0.0]);
           ptlights[i].setDiffuse([0.2,0.15,0.0]);
           ptlights[i].setAmbient([0.0,0.0,0.0]);
           ptlights[i].setSpecular([0.05,0.05,0.05]);
-          ptlights[i].setIsCaught(1);
+          ptlights[i].setIsCaught([0.0, 1.0]);
           Lights.add(ptlights[i]);
      }
 
@@ -228,7 +230,6 @@ function configure(){
                     "uNs",
                     "d",
                     "illum",
-                    "uTranslateLights",
 					"uSampler",
                     "uTextured",
                     "uIscaught"
@@ -241,18 +242,15 @@ function configure(){
     gl.uniform3fv(Program.uLa ,     Lights.getArray('ambient'));
     gl.uniform3fv(Program.uLd,      Lights.getArray('diffuse'));
     gl.uniform3fv(Program.uLs,      Lights.getArray('specular'));
-
-    debugger;
-    gl.uniform1iv(Program.uIsCaught, Lights.getArray('is_caught'));
+    gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
     
     // debugging
-    console.log('iscaught array is ' + Lights.getArray('is_caught'));
-    console.log(gl.getUniform(prg, Program.uIsCaught));
-                //console.log('lights array is ' + Lights.getArray('position'));
-                //console.log('lights diffuse is ' + Lights.getArray('diffuse'));
-                //console.log(gl.getUniform(prg, Program.uLd));
-                    debugger;
-
+    //console.log('iscaught array is ' + Lights.getArray('is_caught'));
+    //console.log(gl.getUniform(prg, Program.uIsCaught));
+    //            console.log('lights array is ' + Lights.getArray('position'));
+    //            console.log('lights diffuse is ' + Lights.getArray('diffuse'));
+    //            console.log(gl.getUniform(prg, Program.uLd));
+    //
     gl.uniform3fv(Program.uKa ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKd ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKs ,     [1.0,1.0,1.0]);
@@ -266,10 +264,15 @@ function load(){
 
     Scene.loadObjectByParts('models/test/part', 'scene', 136);
     Scene.loadObject('models/jar_str8.json');
-    Scene.loadObject('models/geometry/object.json');
-    //Scene.loadObject('models/stoneBrick.json');
 
-    // TODO: load fireflies!
+     // load fireflies
+     for(var i = 1; i <= numFireflies; i+=1) {
+          var str = 'firefly' + i;
+          Scene.loadObject('models/firefly.json', str);
+         // console.log('int parsed is ' + parseInt(str.match(/\d+/)[0], 10));
+     }
+     
+    //Scene.loadObject('models/stoneBrick.json');
 }
 
 
@@ -308,19 +311,18 @@ function render(){
                 //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
             }
             
-	    if (object.alias == 'tracker'){
-                mat4.translate(transforms.mvMatrix, Lights.get(0).position); //gl.getUniform(prg, Program.uLightPosition)[0:2]);
-                console.log('lightposition is ' + Lights.get(0).position); //gl.getUniform(prg, Program.uLightPosition)[0:2]);
+	    if (object.alias.search('firefly') >= 0) {
+                console.log('int is ' + parseInt(object.alias.match(/\d+/)[0], 10));
+                mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10) - 1).position);
             }
             
-
-            /*if (object.alias == 'stone') {
-                var pos = camera.position;
-                var cam_n = camera.normal;
-                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
-                mat4.translate(transforms.mvMatrix, pos);
-                mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
-            }*/
+            //if (object.alias == 'stone') {
+            //    var pos = camera.position;
+            //    var cam_n = camera.normal;
+            //    pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+            //    mat4.translate(transforms.mvMatrix, pos);
+            //    mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+            //}
 
 
             transforms.setMatrixUniforms();
