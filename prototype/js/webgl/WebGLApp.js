@@ -1,6 +1,5 @@
 var WEBGLAPP_RENDER = undefined;
 var WEBGLAPP_TIMER_ID = -1;
-var WEBGLAPP_RENDER_RATE = 30;
 
 function WebGLApp(canvas) {
     this.loadSceneHook = undefined;
@@ -37,17 +36,7 @@ WebGLApp.prototype.run = function(){
      
 renderLoop = function(){
     if(WEBGLAPP_RENDER){
-        WEBGLAPP_TIMER_ID = setInterval(WEBGLAPP_RENDER, WEBGLAPP_RENDER_RATE);
+        WEBGLAPP_RENDER();
+        requestAnimFrame(renderLoop);
      }
 }
-
-window.onblur = function(){
-    clearInterval(WEBGLAPP_TIMER_ID);
-    console.info('Rendering stopped');
-}
-
-window.onfocus = function(){
-    renderLoop();
-    console.info('Rendering resumed');
-}
-
