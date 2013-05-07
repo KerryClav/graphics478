@@ -1,0 +1,12 @@
+#sidebar {
+	width: 200;
+	height: 800px;
+	position: absolute;
+	top: 8px;
+	left: 1008px;
+	background: black;
+}
+
+#label {
+	color: yellow;
+}

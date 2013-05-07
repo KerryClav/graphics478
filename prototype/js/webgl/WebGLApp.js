@@ -1,5 +1,4 @@
 var WEBGLAPP_RENDER = undefined;
-var WEBGLAPP_TIMER_ID = -1;
 
 function WebGLApp(canvas) {
     this.loadSceneHook = undefined;
