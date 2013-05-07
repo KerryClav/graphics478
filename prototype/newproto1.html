@@ -344,7 +344,6 @@ function render(){
         updateLightsInShader();
         //TODO: catch lights here
         Lights.dimLights(0.001);
-        animateFireflies();
         
         for (var i = 0; i < Scene.objects.length; i++){
             
@@ -482,21 +481,6 @@ function render(){
     }
 }
 
-var dy_lights = 0.001;
-var dpos_lights = [0.0,0.0,0.0];
-var pos_lights = .2
-
-function animateFireflies(){
-        pos_lights += dy_lights;
-	dpos_lights[1] = dy_lights;
-    if (pos_lights >= .3 || pos_lights <=.1){
-    	dy_lights = -dy_lights;
-    }
-    Lights.animateLights(dpos_lights);
-    console.log('dpos_lights is ' + dpos_lights);
-    console.log('pos 2 is '+ Lights.get(2).position);
-    //moveLights(dpos_lights);
-}
 
 var app;
 function runGame(){
