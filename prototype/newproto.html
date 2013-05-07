@@ -129,7 +129,8 @@ void main(void) {
         for(int i = 0; i < NUM_LIGHTS; i++){	
             L = normalize(vLightRay[i]);	
             N = normalize(vNormal);	
-            COLOR += ((uLa[i] * uKa) + uLd[i] * uKd * clamp(dot(N, -L),0.0,1.0)) * calculateAttenuation(vLightRay[i]);
+            COLOR +=  uIsCaught[i][1] * calculateAttenuation(vLightRay[i]) *
+               ((uLa[i] * uKa) + uLd[i] * uKd * clamp(dot(N, -L),0.0,1.0));
         }   
         if (uTextured) {
             gl_FragColor =  textureColor * vec4(COLOR,d);
@@ -278,7 +279,7 @@ function load(){
     Scene.loadObject('models/jar_str8.json');
 
      // load fireflies
-     for(var i = 1; i <= numFireflies; i+=1) {
+     for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
           Scene.loadObject('models/firefly.json', str);
      }
@@ -300,7 +301,7 @@ function render(){
     try {
         updateLightsInShader();
         //TODO: catch lights here
-        Lights.dimLights(0.0000001);
+        Lights.dimLights(0.001);
         
         for (var i = 0; i < Scene.objects.length; i++){
             
@@ -325,8 +326,9 @@ function render(){
                 //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
             }
             
+            // handle the firefly objects aliased as 'firefly#'
 	    if (object.alias.search('firefly') >= 0) {
-                mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10) - 1).position);
+                mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
             }
             
             //if (object.alias == 'stone') {
