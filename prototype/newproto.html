@@ -218,13 +218,6 @@ function configure(){
      // initialize firefly point lights
      for(var i = 1; i <= numFireflies; i+=1) {
           ptlights[i] = new Light('light'+i);
-          
-          ptlights[i].setPosition([Math.random()*10-5,0.2,Math.random()*10-5]);
-          //ptlights[i].setPosition([0.0,0.2,0.0]);
-          ptlights[i].setDiffuse([0.2,0.2,0.2]);
-          ptlights[i].setAmbient([1.0,1.0,1.0]);
-          ptlights[i].setSpecular([0.05,0.05,0.05]); // add spec later!
-          ptlights[i].setIsCaught([0.0, 1.0]);
           Lights.add(ptlights[i]);
      }
      
