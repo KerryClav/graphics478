@@ -310,7 +310,7 @@ function load(){
     //Scene.loadObjectByParts('models/toys/turtle/part', 'turtle', 20);
     //Scene.loadObjectByParts('models/toys/puppy2/part', 'puppy2', 15);
     //Scene.loadObjectByParts('models/toys/cat/part', 'cat', 7);
-    Scene.loadObjectByParts('models/toys/train2/part', 'train', 7);
+    //Scene.loadObjectByParts('models/toys/train2/part', 'train', 7);
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
@@ -351,6 +351,13 @@ function placeToy(idx) {
     }
 
     toy.position = prospective_position;
+
+    var sidebar = document.getElementById('sidebar');
+    var img = new Image();
+    img.src = 'images/' + cur_toy.name + '_silo.png';
+    img.id = 'toy' + (8 - dummyToyList.length);
+    img.toyName = cur_toy.name;
+    sidebar.insertBefore(img, sidebar.firstChild);
 }
 
 
@@ -501,8 +508,14 @@ function render(){
             Scene.removeObject(toy.objects[i]);
         }
 
-        alert('got it! ' + dummyToyList.length + ' toys left!');
-        placeToy(randomInt(dummyToyList.length - 1));
+        var cur_img = document.getElementById('toy' + (8 - dummyToyList.length));
+        cur_img.src = 'images/' + cur_img.toyName + '.png';
+
+        if (dummyToyList.length == 0) {
+            alert('Cool.');
+        } else {
+            placeToy(randomInt(dummyToyList.length - 1));
+        }
     }
 }
 
@@ -526,7 +539,6 @@ function runGame() {
 <div id="content">
     <canvas id='the-canvas' width='1000' height='800'></canvas>
     <div id='sidebar'>
-        
     </div>
 </div>
 
