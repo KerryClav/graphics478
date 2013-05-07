@@ -328,7 +328,15 @@ function render(){
             
             // handle the firefly objects aliased as 'firefly#'
 	    if (object.alias.search('firefly') >= 0) {
-                mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
+                var pos = camera.position;
+                var cam_n = camera.normal;
+                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+                if (Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).is_caught[0] == 1.0){
+                    mat4.translate(transforms.mvMatrix, pos);
+                }
+                else {
+                    mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
+                }
             }
             
             //if (object.alias == 'stone') {
