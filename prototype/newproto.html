@@ -374,6 +374,7 @@ function render(){
         updateLightsInShader();
         //TODO: catch lights here
         Lights.dimLights(0.001);
+        Lights.animateLights();
         
         for (var i = 0; i < Scene.objects.length; i++){
             
@@ -510,6 +511,8 @@ function render(){
         placeToy(randomInt(dummyToyList.length - 1));
     }
 }
+
+
 
 
 var app;

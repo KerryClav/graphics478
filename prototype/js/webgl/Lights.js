@@ -1,4 +1,5 @@
 var caughtpos = [0.0,0.2,0.0];
+var t = 0.0;
 
 function Light(name){
 	this.id = name;
@@ -6,9 +7,16 @@ function Light(name){
 	this.ambient = [0.0,0.0,0.0,0.0];
 	this.diffuse = [0.0,0.0,0.0,0.0];
 	this.specular = [0.0,0.0,0.0,0.0];
+	
 	// is_caught[0] specifies whether or not the firefly is caught
 	// is_caught[1] specifies how much light the firefly has left
 	this.is_caught = [0.0, 1.0];
+	
+	// used to move uncaught fireflies
+	this.dr = [Math.random()*0.1,Math.random()*0.1,Math.random()*0.1];
+	this.w = [2 * Math.PI * Math.random()*0.01,
+		  2 * Math.PI * Math.random()*0.01, 2 * Math.PI * Math.random()*0.01];
+
 }
 
 Light.prototype.setIsCaught = function(p){
@@ -104,5 +112,20 @@ var Lights = {
 		else {
 			throw 'Unknown parameter';
 		}		
+	},
+	
+	animateLights: function (){
+		t += 1.0;
+		for(var i = 0, max = this.list.length; i < max; i+=1){
+			// if the light is not caught then move it
+			if(this.list[i].is_caught[0] == 0.0) {
+				for(var j = 0; j < 3; j+=1){
+					//this.list[i].position[j] += this.list[i].dr[j];
+					this.list[i].position[j] += this.list[i].dr[j] *
+						Math.sin(this.list[i].w[j] * t); 
+				}
+			}
+		}
+		return;
 	}
 }

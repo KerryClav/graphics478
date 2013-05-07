@@ -172,11 +172,6 @@ cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11;
 
-<<<<<<< HEAD
-=======
-toy = {};
-
->>>>>>> e1ed65ae0473d8a09f87be46b867b11aeff705fb
 function configure(){
     gl.clearColor(0.0,0.0,0.1, 1.0);
     gl.clearDepth(1.0);
@@ -227,7 +222,6 @@ function configure(){
 					"aVertexColor",
                     "aTextureCoord"];
 
-<<<<<<< HEAD
 	var uniformList = [	"uPMatrix", 
 					"uMVMatrix", 
 					"uNMatrix",
@@ -246,27 +240,6 @@ function configure(){
                     "uIsCaught",
                     "uTextured"
                     ];
-=======
-    var uniformList = [ "uPMatrix", 
-                        "uMVMatrix", 
-                        "uNMatrix",
-                "uLightPosition",
-                "uWireframe",
-                "uLa",
-                "uLd",
-                "uLs",
-                "uKa",
-                "uKd",
-                "uKs",
-                "uNs",
-                "d",
-                "illum",
-                    "uSampler",
-                "uIsCaught",
-                "uTextured"
-                ];
-                    
->>>>>>> e1ed65ae0473d8a09f87be46b867b11aeff705fb
 					
 	Program.load(attributeList, uniformList);
 	
@@ -308,7 +281,7 @@ function load(){
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
-          Scene.loadObject('models/firefly.json', str);
+          Scene.loadObject('models/ff.json', str);
      }
      
     //Scene.loadObject('models/stoneBrick.json');

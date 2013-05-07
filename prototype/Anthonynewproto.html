@@ -19,7 +19,7 @@
 
 <script id="shader-vs" type="x-shader/x-vertex">
 
-const int NUM_LIGHTS = 4; //Globals.NUM_FIREFLIES;
+const int NUM_LIGHTS = 4;
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
@@ -172,11 +172,9 @@ cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11;
 
-<<<<<<< HEAD
-=======
+
 toy = {};
 
->>>>>>> e1ed65ae0473d8a09f87be46b867b11aeff705fb
 function configure(){
     gl.clearColor(0.0,0.0,0.1, 1.0);
     gl.clearDepth(1.0);
@@ -227,7 +225,6 @@ function configure(){
 					"aVertexColor",
                     "aTextureCoord"];
 
-<<<<<<< HEAD
 	var uniformList = [	"uPMatrix", 
 					"uMVMatrix", 
 					"uNMatrix",
@@ -242,31 +239,10 @@ function configure(){
                     "uNs",
                     "d",
                     "illum",
-		    "uSampler",
-                    "uIsCaught",
-                    "uTextured"
+					"uSampler",
+                    "uTextured",
+                    "uIscaught"
                     ];
-=======
-    var uniformList = [ "uPMatrix", 
-                        "uMVMatrix", 
-                        "uNMatrix",
-                "uLightPosition",
-                "uWireframe",
-                "uLa",
-                "uLd",
-                "uLs",
-                "uKa",
-                "uKd",
-                "uKs",
-                "uNs",
-                "d",
-                "illum",
-                    "uSampler",
-                "uIsCaught",
-                "uTextured"
-                ];
-                    
->>>>>>> e1ed65ae0473d8a09f87be46b867b11aeff705fb
 					
 	Program.load(attributeList, uniformList);
 	
@@ -304,14 +280,50 @@ function load(){
 
     Scene.loadObjectByParts('models/test/part', 'scene', 136);
     Scene.loadObject('models/jar_str8.json');
-
+    //Scene.loadObjectByParts('models/toys/train/part', 'train', 7);
+    //Scene.loadObjectByParts('models/toys/ugly_bunny/part', 'bunny', 4);
+    //Scene.loadObjectByParts('models/toys/puppy/part', 'puppy', 14);
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
           Scene.loadObject('models/firefly.json', str);
      }
+
+     placeToy();
      
     //Scene.loadObject('models/stoneBrick.json');
+}
+
+// Returns the euclidean distance from the specified point
+// to the current camera position. ONLY WORKS FOR TOYS AND LIGHTS.
+function objDist(obj_pos) {
+    var cam_pos = camera.position;
+
+    var dist = Math.sqrt((camera.position[0] - obj_pos[0])*(camera.position[0] - obj_pos[0]) + 
+                         (camera.position[1] - obj_pos[1])*(camera.position[1] - obj_pos[1]) +
+                         (camera.position[2] - obj_pos[2])*(camera.position[2] - obj_pos[2]));
+
+    //console.log(dist);
+
+    return dist;
+}
+
+function placeToy() {
+    Scene.loadObjectByParts('models/toys/ducky/part', 'toy', 4);
+
+    toy['objects'] = [];
+    for (i = 1; i <= 4; i++) {
+        toy.objects.push('toy' + i);
+    }
+
+    var cur_pos = camera.position;
+    var prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
+    
+    while (objDist(prospective_position) < 6) {
+        prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
+    }
+
+    toy.position = prospective_position;
 }
 
 
@@ -336,22 +348,22 @@ function render(){
 	    if (object.visible != undefined && !object.visible) continue;
             
 	    transforms.calculateModelView();           
-            transforms.push();
+        transforms.push();
             
-            if (object.alias == 'jar') {
-                var pos = camera.position;
-                var cam_n = camera.normal;
-                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+        if (object.alias == 'jar') {
+            var pos = camera.position;
+            var cam_n = camera.normal;
+            pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
                 
-                // Not quite right :( Can you fix this? I figured out the roations
-                // to keep the orientation of the jar correct, but now it moves
-                // in front of the camera :/
-                mat4.translate(transforms.mvMatrix, pos);
-                //mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+            // Not quite right :( Can you fix this? I figured out the roations
+            // to keep the orientation of the jar correct, but now it moves
+            // in front of the camera :/
+            mat4.translate(transforms.mvMatrix, pos);
+            mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
                 
-                //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
-                //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
-            }
+            //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
+            //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
+        }
             
             // handle the firefly objects aliased as 'firefly#'
 	    if (object.alias.search('firefly') >= 0) {
@@ -365,7 +377,11 @@ function render(){
                     mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
                 }
             }
-            
+
+
+        if (object.alias.search('toy') >= 0) {
+            mat4.translate(transforms.mvMatrix, toy.position);
+        }            
             //if (object.alias == 'stone') {
             //    var pos = camera.position;
             //    var cam_n = camera.normal;
@@ -403,17 +419,7 @@ function render(){
             gl.uniform1f(Program.uNs, object.Ns);
             gl.uniform1f(Program.d, object.d);
             gl.uniform1i(Program.illum, object.illum);
-            
-           /*if(object.d < 1.0){  //tweaking parameters here
-                switch(selectedCar){
-                    case 'bmwv3': gl.uniform1f(Program.d, 0.14); break;
-                    case 'audi' : gl.uniform1f(Program.d, 0.8); break;
-                    case 'mustang': gl.uniform1f(Program.d, 0.3); break;
-                    case 'bmwi8': break; //nothing to do here
-                }
-			}*/
-           
-            
+             
             gl.bindBuffer(gl.ARRAY_BUFFER, object.vbo);
             gl.vertexAttribPointer(Program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(Program.aVertexPosition);
@@ -451,6 +457,15 @@ function render(){
     }
 
     camera.walk();
+
+    if (objDist([toy.position[0], 0.4, toy.position[2]]) < 0.5) {
+        for (var i = 0; i < toy.objects.length; i++) {
+            Scene.removeObject(toy.objects[i]);
+        }
+
+        console.log('GOT IT!');
+        placeToy();
+    }
 }
 
 
