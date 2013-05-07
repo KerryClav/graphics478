@@ -1,3 +1,5 @@
+var caughtpos = [0.0,0.2,0.0];
+
 function Light(name){
 	this.id = name;
 	this.position = [0.0,0.0,0.0];
@@ -72,5 +74,35 @@ var Lights = {
 		else {
 			throw 'Unknown parameter';
 		}
+	},
+
+	dimLights: function(delta){
+		for(var i = 0, max = this.list.length; i < max; i+=1){
+			if(this.list[i].is_caught[0] == 1.0) {
+				this.list[i].is_caught[1] = Math.max(this.list[i].is_caught[1] - delta, 0.0);
+			}
+		}
+		return;
+	},
+	
+	catchLight: function(idx){
+		if ((typeof idx == 'number') && idx >= 0 && idx < this.list.length){
+			this.list[idx].position = caughtpos;
+			this.list[idx].is_caught = [1.0,1.0];
+			return;
+		}
+		else if (typeof idx == 'string'){
+			for(var i=0, max = this.list.length; i < max; i+=1){
+				if (this.list[i].id == idx) {
+					this.list[i].position = caughtpos;
+					this.list[i].is_caught = [1.0,1.0];
+					return;
+				}
+			}
+			throw 'Light ' + idx + ' does not exist';
+		}
+		else {
+			throw 'Unknown parameter';
+		}		
 	}
 }

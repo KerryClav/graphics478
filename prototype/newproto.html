@@ -75,6 +75,7 @@ const int NUM_LIGHTS = 4;
 uniform vec3  uLa[NUM_LIGHTS];   //ambient
 uniform vec3  uLd[NUM_LIGHTS];   //diffuse
 uniform vec3  uLs[NUM_LIGHTS];   //specular
+uniform vec2 uIsCaught[NUM_LIGHTS];
 
 //Material uniforms
 uniform vec3  uKa;   //ambient
@@ -128,7 +129,8 @@ void main(void) {
         for(int i = 0; i < NUM_LIGHTS; i++){	
             L = normalize(vLightRay[i]);	
             N = normalize(vNormal);	
-            COLOR += (uLa[i] * uKa) + (uLd[i] * uKd * clamp(dot(N, -L),0.0,1.0) * calculateAttenuation(vLightRay[i]));
+            COLOR +=  uIsCaught[i][1] * calculateAttenuation(vLightRay[i]) *
+               ((uLa[i] * uKa) + uLd[i] * uKd * clamp(dot(N, -L),0.0,1.0));
         }   
         if (uTextured) {
             gl_FragColor =  textureColor * vec4(COLOR,d);
@@ -144,9 +146,9 @@ void main(void) {
             E = normalize(vEye[i]);
             L = normalize(vLightRay[i]);
             R = reflect(L, N);
-            COLOR += (uLa[i] * uKa);
-            COLOR += (uLd[i] * uKd * clamp(dot(N,-L),0.0,1.0) * calculateAttenuation(vLightRay[i]));
-            COLOR += (uLs[i] * uKs * pow( max(dot(R, E), 0.0), uNs) * 4.0);
+            COLOR += uIsCaught[i][1] * calculateAttenuation(vLightRay[i]) * ((uLa[i] * uKa)  +
+               (uLd[i] * uKd * clamp(dot(N,-L),0.0,1.0)) +
+               (uLs[i] * uKs * pow( max(dot(R, E), 0.0), uNs) * 4.0));
         }
         if (uTextured) {
             gl_FragColor =  textureColor * vec4(COLOR,d);
@@ -162,7 +164,8 @@ void main(void) {
 
 var camera = null,
 numFireflies = 4,  // make sure to change the constant NUM_LIGHTS in the shaders too!
-ptlights = [];
+ptlights = [],
+//caughtpos = [0.0,0.2,0.0],
 transforms = null,
 
 cameraHome = [0.0,0.4,7],
@@ -212,6 +215,9 @@ function configure(){
           ptlights[i].setIsCaught([0.0, 1.0]);
           Lights.add(ptlights[i]);
      }
+     
+     Lights.catchLight(0);
+     Lights.catchLight(1);
 
     //init Program
 	var attributeList = [           "aVertexPosition",
@@ -240,12 +246,14 @@ function configure(){
 					
 	Program.load(attributeList, uniformList);
 	
-	
-    gl.uniform3fv(Program.uLightPosition, Lights.getArray('position'));
+
+
+    //gl.uniform3fv(Program.uLightPosition, Lights.getArray('position'));
     gl.uniform3fv(Program.uLa ,     Lights.getArray('ambient'));
     gl.uniform3fv(Program.uLd,      Lights.getArray('diffuse'));
     gl.uniform3fv(Program.uLs,      Lights.getArray('specular'));
-    gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
+    //gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
+    updateLightsInShader();
     
     // debugging
     //console.log('iscaught array is ' + Lights.getArray('is_caught'));
@@ -263,6 +271,11 @@ function configure(){
 
 }
 
+function updateLightsInShader() {
+     gl.uniform3fv(Program.uLightPosition, Lights.getArray('position'));
+     gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
+}
+
 function load(){
 
     Scene.loadObjectByParts('models/test/part', 'scene', 136);
@@ -271,7 +284,7 @@ function load(){
     //Scene.loadObjectByParts('models/toys/ugly_bunny/part', 'bunny', 4);
     //Scene.loadObjectByParts('models/toys/puppy/part', 'puppy', 14);
      // load fireflies
-     for(var i = 1; i <= numFireflies; i+=1) {
+     for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
           Scene.loadObject('models/ff.json', str);
      }
@@ -325,6 +338,10 @@ function render(){
     transforms.updatePerspective();
 
     try {
+        updateLightsInShader();
+        //TODO: catch lights here
+        Lights.dimLights(0.001);
+        
         for (var i = 0; i < Scene.objects.length; i++){
             
             var object = Scene.objects[i];
@@ -348,16 +365,23 @@ function render(){
             //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
         }
             
+            // handle the firefly objects aliased as 'firefly#'
 	    if (object.alias.search('firefly') >= 0) {
-            mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10) - 1).position);
-        }
+                var pos = camera.position;
+                var cam_n = camera.normal;
+                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+                if (Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).is_caught[0] == 1.0){
+                    mat4.translate(transforms.mvMatrix, pos);
+                }
+                else {
+                    mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
+                }
+            }
+
 
         if (object.alias.search('toy') >= 0) {
             mat4.translate(transforms.mvMatrix, toy.position);
-        }
-
-
-            
+        }            
             //if (object.alias == 'stone') {
             //    var pos = camera.position;
             //    var cam_n = camera.normal;
@@ -436,7 +460,6 @@ function render(){
 			
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
         }
     } catch(err) {
         alert(err);
