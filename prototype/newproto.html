@@ -320,7 +320,7 @@ function render(){
                 // to keep the orientation of the jar correct, but now it moves
                 // in front of the camera :/
                 mat4.translate(transforms.mvMatrix, pos);
-                mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+                //mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
                 
                 //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
                 //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
