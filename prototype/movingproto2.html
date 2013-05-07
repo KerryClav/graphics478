@@ -172,6 +172,8 @@ cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11;
 
+toy = {};
+
 function configure(){
     gl.clearColor(0.0,0.0,0.1, 1.0);
     gl.clearDepth(1.0);
@@ -204,11 +206,11 @@ function configure(){
      for(var i = 1; i <= numFireflies; i+=1) {
           ptlights[i] = new Light('light'+i);
           
-          ptlights[i].setPosition([Math.random()*10-5,0.1,Math.random()*10-5]);
+          ptlights[i].setPosition([Math.random()*10-5,0.2,Math.random()*10-5]);
           //ptlights[i].setPosition([0.0,0.2,0.0]);
-          ptlights[i].setDiffuse([0.2,0.15,0.0]);
-          ptlights[i].setAmbient([0.0,0.0,0.0]);
-          ptlights[i].setSpecular([0.05,0.05,0.05]);
+          ptlights[i].setDiffuse([0.2,0.2,0.2]);
+          ptlights[i].setAmbient([1.0,1.0,1.0]);
+          ptlights[i].setSpecular([0.05,0.05,0.05]); // add spec later!
           ptlights[i].setIsCaught([0.0, 1.0]);
           Lights.add(ptlights[i]);
      }
@@ -222,24 +224,25 @@ function configure(){
 					"aVertexColor",
                     "aTextureCoord"];
 
-	var uniformList = [	"uPMatrix", 
-					"uMVMatrix", 
-					"uNMatrix",
-                    "uLightPosition",
-                    "uWireframe",
-                    "uLa",
-                    "uLd",
-                    "uLs",
-                    "uKa",
-                    "uKd",
-                    "uKs",
-                    "uNs",
-                    "d",
-                    "illum",
-		    "uSampler",
-                    "uIsCaught",
-                    "uTextured"
-                    ];
+    var uniformList = [ "uPMatrix", 
+                        "uMVMatrix", 
+                        "uNMatrix",
+                "uLightPosition",
+                "uWireframe",
+                "uLa",
+                "uLd",
+                "uLs",
+                "uKa",
+                "uKd",
+                "uKs",
+                "uNs",
+                "d",
+                "illum",
+                    "uSampler",
+                "uIsCaught",
+                "uTextured"
+                ];
+                    
 					
 	Program.load(attributeList, uniformList);
 	
@@ -277,14 +280,53 @@ function load(){
 
     Scene.loadObjectByParts('models/test/part', 'scene', 136);
     Scene.loadObject('models/jar_str8.json');
-
+    //Scene.loadObjectByParts('models/toys/train/part', 'train', 7);
+    //Scene.loadObjectByParts('models/toys/ugly_bunny/part', 'bunny', 4);
+    //Scene.loadObjectByParts('models/toys/puppy/part', 'puppy', 14);
+    //Scene.loadObjectByParts('models/toys/plane/part', 'plane', 13);
+    //Scene.loadObjectByParts('models/toys/giraffe/part', 'giraffe', 9);
+    Scene.loadObjectByParts('models/toys/turtle/part', 'turtle', 20);
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
           Scene.loadObject('models/ff.json', str);
      }
+
+     placeToy();
      
     //Scene.loadObject('models/stoneBrick.json');
+}
+
+// Returns the euclidean distance from the specified point
+// to the current camera position. ONLY WORKS FOR TOYS AND LIGHTS.
+function objDist(obj_pos) {
+    var cam_pos = camera.position;
+
+    var dist = Math.sqrt((camera.position[0] - obj_pos[0])*(camera.position[0] - obj_pos[0]) + 
+                         (camera.position[1] - obj_pos[1])*(camera.position[1] - obj_pos[1]) +
+                         (camera.position[2] - obj_pos[2])*(camera.position[2] - obj_pos[2]));
+
+    //console.log(dist);
+
+    return dist;
+}
+
+function placeToy() {
+    Scene.loadObjectByParts('models/toys/ducky/part', 'toy', 4);
+
+    toy['objects'] = [];
+    for (i = 1; i <= 4; i++) {
+        toy.objects.push('toy' + i);
+    }
+
+    var cur_pos = camera.position;
+    var prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
+    
+    while (objDist(prospective_position) < 6) {
+        prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
+    }
+
+    toy.position = prospective_position;
 }
 
 
@@ -302,6 +344,7 @@ function render(){
         updateLightsInShader();
         //TODO: catch lights here
         Lights.dimLights(0.001);
+        animateFireflies();
         
         for (var i = 0; i < Scene.objects.length; i++){
             
@@ -309,22 +352,22 @@ function render(){
 	    if (object.visible != undefined && !object.visible) continue;
             
 	    transforms.calculateModelView();           
-            transforms.push();
+        transforms.push();
             
-            if (object.alias == 'jar') {
-                var pos = camera.position;
-                var cam_n = camera.normal;
-                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+        if (object.alias == 'jar') {
+            var pos = camera.position;
+            var cam_n = camera.normal;
+            pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
                 
-                // Not quite right :( Can you fix this? I figured out the roations
-                // to keep the orientation of the jar correct, but now it moves
-                // in front of the camera :/
-                mat4.translate(transforms.mvMatrix, pos);
-                //mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+            // Not quite right :( Can you fix this? I figured out the roations
+            // to keep the orientation of the jar correct, but now it moves
+            // in front of the camera :/
+            mat4.translate(transforms.mvMatrix, pos);
+            mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
                 
-                //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
-                //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
-            }
+            //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
+            //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
+        }
             
             // handle the firefly objects aliased as 'firefly#'
 	    if (object.alias.search('firefly') >= 0) {
@@ -338,7 +381,11 @@ function render(){
                     mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
                 }
             }
-            
+
+
+        if (object.alias.search('toy') >= 0) {
+            mat4.translate(transforms.mvMatrix, toy.position);
+        }            
             //if (object.alias == 'stone') {
             //    var pos = camera.position;
             //    var cam_n = camera.normal;
@@ -424,8 +471,32 @@ function render(){
     }
 
     camera.walk();
+
+    if (objDist([toy.position[0], 0.4, toy.position[2]]) < 0.5) {
+        for (var i = 0; i < toy.objects.length; i++) {
+            Scene.removeObject(toy.objects[i]);
+        }
+
+        console.log('GOT IT!');
+        placeToy();
+    }
 }
 
+var dy_lights = 0.001;
+var dpos_lights = [0.0,0.0,0.0];
+var pos_lights = .2
+
+function animateFireflies(){
+        pos_lights += dy_lights;
+	dpos_lights[1] = dy_lights;
+    if (pos_lights >= .3 || pos_lights <=.1){
+    	dy_lights = -dy_lights;
+    }
+    Lights.animateLights(dpos_lights);
+    console.log('dpos_lights is ' + dpos_lights);
+    console.log('pos 2 is '+ Lights.get(2).position);
+    //moveLights(dpos_lights);
+}
 
 var app;
 function runGame(){

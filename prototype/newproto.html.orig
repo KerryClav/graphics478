@@ -30,7 +30,7 @@ uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uNMatrix;
 
-uniform int uIsCaught[NUM_LIGHTS];
+uniform vec2 uIsCaught[NUM_LIGHTS];
 uniform vec3 uLightPosition[NUM_LIGHTS];
 
 varying vec3 vNormal;
@@ -46,10 +46,12 @@ void main(void) {
      vec4 lightPosition = vec4(0.0);
      
      for(int i=0; i < NUM_LIGHTS; i++){
+          
           lightPosition = vec4(uLightPosition[i], 1.0);
+          
           // if the fireflie is not caught (uIsCaught should be zero) then let
           // it move with the rest of the scene, otherwise don't translate it
-          if (uIsCaught[i] == 0){ 
+          if (uIsCaught[i][0] == 0.0){ 
                lightPosition  =  uMVMatrix * lightPosition;
           }
           
@@ -73,6 +75,7 @@ const int NUM_LIGHTS = 4;
 uniform vec3  uLa[NUM_LIGHTS];   //ambient
 uniform vec3  uLd[NUM_LIGHTS];   //diffuse
 uniform vec3  uLs[NUM_LIGHTS];   //specular
+uniform vec2 uIsCaught[NUM_LIGHTS];
 
 //Material uniforms
 uniform vec3  uKa;   //ambient
@@ -126,7 +129,8 @@ void main(void) {
         for(int i = 0; i < NUM_LIGHTS; i++){	
             L = normalize(vLightRay[i]);	
             N = normalize(vNormal);	
-            COLOR += (uLa[i] * uKa) + (uLd[i] * uKd * clamp(dot(N, -L),0.0,1.0) * calculateAttenuation(vLightRay[i]));
+            COLOR +=  uIsCaught[i][1] * calculateAttenuation(vLightRay[i]) *
+               ((uLa[i] * uKa) + uLd[i] * uKd * clamp(dot(N, -L),0.0,1.0));
         }   
         if (uTextured) {
             gl_FragColor =  textureColor * vec4(COLOR,d);
@@ -142,9 +146,9 @@ void main(void) {
             E = normalize(vEye[i]);
             L = normalize(vLightRay[i]);
             R = reflect(L, N);
-            COLOR += (uLa[i] * uKa);
-            COLOR += (uLd[i] * uKd * clamp(dot(N,-L),0.0,1.0) * calculateAttenuation(vLightRay[i]));
-            COLOR += (uLs[i] * uKs * pow( max(dot(R, E), 0.0), uNs) * 4.0);
+            COLOR += uIsCaught[i][1] * calculateAttenuation(vLightRay[i]) * ((uLa[i] * uKa)  +
+               (uLd[i] * uKd * clamp(dot(N,-L),0.0,1.0)) +
+               (uLs[i] * uKs * pow( max(dot(R, E), 0.0), uNs) * 4.0));
         }
         if (uTextured) {
             gl_FragColor =  textureColor * vec4(COLOR,d);
@@ -160,13 +164,19 @@ void main(void) {
 
 var camera = null,
 numFireflies = 4,  // make sure to change the constant NUM_LIGHTS in the shaders too!
-ptlights = [];
+ptlights = [],
+//caughtpos = [0.0,0.2,0.0],
 transforms = null,
 
 cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11;
 
+<<<<<<< HEAD
+=======
+toy = {};
+
+>>>>>>> e1ed65ae0473d8a09f87be46b867b11aeff705fb
 function configure(){
     gl.clearColor(0.0,0.0,0.1, 1.0);
     gl.clearDepth(1.0);
@@ -199,14 +209,17 @@ function configure(){
      for(var i = 1; i <= numFireflies; i+=1) {
           ptlights[i] = new Light('light'+i);
           
-          ptlights[i].setPosition([Math.random()*10-5,0.2,Math.random()*10-5]);
-          //ptlights[i].setPosition([5.0,0.4,5.0]);
+          ptlights[i].setPosition([Math.random()*10-5,0.1,Math.random()*10-5]);
+          //ptlights[i].setPosition([0.0,0.2,0.0]);
           ptlights[i].setDiffuse([0.2,0.15,0.0]);
           ptlights[i].setAmbient([0.0,0.0,0.0]);
           ptlights[i].setSpecular([0.05,0.05,0.05]);
-          ptlights[i].setIsCaught(1);
+          ptlights[i].setIsCaught([0.0, 1.0]);
           Lights.add(ptlights[i]);
      }
+     
+     Lights.catchLight(0);
+     Lights.catchLight(1);
 
     //init Program
 	var attributeList = [           "aVertexPosition",
@@ -214,6 +227,7 @@ function configure(){
 					"aVertexColor",
                     "aTextureCoord"];
 
+<<<<<<< HEAD
 	var uniformList = [	"uPMatrix", 
 					"uMVMatrix", 
 					"uNMatrix",
@@ -228,31 +242,50 @@ function configure(){
                     "uNs",
                     "d",
                     "illum",
-                    "uTranslateLights",
-					"uSampler",
-                    "uTextured",
-                    "uIscaught"
+		    "uSampler",
+                    "uIsCaught",
+                    "uTextured"
                     ];
+=======
+    var uniformList = [ "uPMatrix", 
+                        "uMVMatrix", 
+                        "uNMatrix",
+                "uLightPosition",
+                "uWireframe",
+                "uLa",
+                "uLd",
+                "uLs",
+                "uKa",
+                "uKd",
+                "uKs",
+                "uNs",
+                "d",
+                "illum",
+                    "uSampler",
+                "uIsCaught",
+                "uTextured"
+                ];
+                    
+>>>>>>> e1ed65ae0473d8a09f87be46b867b11aeff705fb
 					
 	Program.load(attributeList, uniformList);
 	
-	
-    gl.uniform3fv(Program.uLightPosition, Lights.getArray('position'));
+
+
+    //gl.uniform3fv(Program.uLightPosition, Lights.getArray('position'));
     gl.uniform3fv(Program.uLa ,     Lights.getArray('ambient'));
     gl.uniform3fv(Program.uLd,      Lights.getArray('diffuse'));
     gl.uniform3fv(Program.uLs,      Lights.getArray('specular'));
-
-    debugger;
-    gl.uniform1iv(Program.uIsCaught, Lights.getArray('is_caught'));
+    //gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
+    updateLightsInShader();
     
     // debugging
-    console.log('iscaught array is ' + Lights.getArray('is_caught'));
-    console.log(gl.getUniform(prg, Program.uIsCaught));
-                //console.log('lights array is ' + Lights.getArray('position'));
-                //console.log('lights diffuse is ' + Lights.getArray('diffuse'));
-                //console.log(gl.getUniform(prg, Program.uLd));
-                    debugger;
-
+    //console.log('iscaught array is ' + Lights.getArray('is_caught'));
+    //console.log(gl.getUniform(prg, Program.uIsCaught));
+    //            console.log('lights array is ' + Lights.getArray('position'));
+    //            console.log('lights diffuse is ' + Lights.getArray('diffuse'));
+    //            console.log(gl.getUniform(prg, Program.uLd));
+    //
     gl.uniform3fv(Program.uKa ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKd ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKs ,     [1.0,1.0,1.0]);
@@ -262,14 +295,23 @@ function configure(){
 
 }
 
+function updateLightsInShader() {
+     gl.uniform3fv(Program.uLightPosition, Lights.getArray('position'));
+     gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
+}
+
 function load(){
 
     Scene.loadObjectByParts('models/test/part', 'scene', 136);
     Scene.loadObject('models/jar_str8.json');
-    Scene.loadObject('models/geometry/object.json');
-    //Scene.loadObject('models/stoneBrick.json');
 
-    // TODO: load fireflies!
+     // load fireflies
+     for(var i = 0; i < numFireflies; i+=1) {
+          var str = 'firefly' + i;
+          Scene.loadObject('models/firefly.json', str);
+     }
+     
+    //Scene.loadObject('models/stoneBrick.json');
 }
 
 
@@ -284,6 +326,10 @@ function render(){
     transforms.updatePerspective();
 
     try {
+        updateLightsInShader();
+        //TODO: catch lights here
+        Lights.dimLights(0.001);
+        
         for (var i = 0; i < Scene.objects.length; i++){
             
             var object = Scene.objects[i];
@@ -301,26 +347,32 @@ function render(){
                 // to keep the orientation of the jar correct, but now it moves
                 // in front of the camera :/
                 mat4.translate(transforms.mvMatrix, pos);
-                //console.log('jar position is ' + pos);
-                mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+                //mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
                 
                 //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
                 //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
             }
             
-	    if (object.alias == 'tracker'){
-                mat4.translate(transforms.mvMatrix, Lights.get(0).position); //gl.getUniform(prg, Program.uLightPosition)[0:2]);
-                console.log('lightposition is ' + Lights.get(0).position); //gl.getUniform(prg, Program.uLightPosition)[0:2]);
-            }
-            
-
-            /*if (object.alias == 'stone') {
+            // handle the firefly objects aliased as 'firefly#'
+	    if (object.alias.search('firefly') >= 0) {
                 var pos = camera.position;
                 var cam_n = camera.normal;
                 pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
-                mat4.translate(transforms.mvMatrix, pos);
-                mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
-            }*/
+                if (Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).is_caught[0] == 1.0){
+                    mat4.translate(transforms.mvMatrix, pos);
+                }
+                else {
+                    mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
+                }
+            }
+            
+            //if (object.alias == 'stone') {
+            //    var pos = camera.position;
+            //    var cam_n = camera.normal;
+            //    pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+            //    mat4.translate(transforms.mvMatrix, pos);
+            //    mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+            //}
 
 
             transforms.setMatrixUniforms();
@@ -392,7 +444,6 @@ function render(){
 			
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
         }
     } catch(err) {
         alert(err);

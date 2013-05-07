@@ -104,5 +104,16 @@ var Lights = {
 		else {
 			throw 'Unknown parameter';
 		}		
-	}
+	},
+	
+	animateLights: function(pos){
+		for(var i = 0, max = this.list.length; i < max; i+=1){
+			if(this.list[i].is_caught[0] == 0.0) {
+				for(var j = 0; j < 3; j+=1){
+					this.list[i].position[j] += pos[j];
+				}
+			}
+		}
+		return;
+	}	
 }

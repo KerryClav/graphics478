@@ -172,6 +172,8 @@ cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11;
 
+toy = {};
+
 function configure(){
     gl.clearColor(0.0,0.0,0.1, 1.0);
     gl.clearDepth(1.0);
@@ -204,11 +206,11 @@ function configure(){
      for(var i = 1; i <= numFireflies; i+=1) {
           ptlights[i] = new Light('light'+i);
           
-          ptlights[i].setPosition([Math.random()*10-5,0.1,Math.random()*10-5]);
+          ptlights[i].setPosition([Math.random()*10-5,0.2,Math.random()*10-5]);
           //ptlights[i].setPosition([0.0,0.2,0.0]);
-          ptlights[i].setDiffuse([0.2,0.15,0.0]);
-          ptlights[i].setAmbient([0.0,0.0,0.0]);
-          ptlights[i].setSpecular([0.05,0.05,0.05]);
+          ptlights[i].setDiffuse([0.2,0.2,0.2]);
+          ptlights[i].setAmbient([1.0,1.0,1.0]);
+          ptlights[i].setSpecular([0.05,0.05,0.05]); // add spec later!
           ptlights[i].setIsCaught([0.0, 1.0]);
           Lights.add(ptlights[i]);
      }
@@ -222,24 +224,25 @@ function configure(){
 					"aVertexColor",
                     "aTextureCoord"];
 
-	var uniformList = [	"uPMatrix", 
-					"uMVMatrix", 
-					"uNMatrix",
-                    "uLightPosition",
-                    "uWireframe",
-                    "uLa",
-                    "uLd",
-                    "uLs",
-                    "uKa",
-                    "uKd",
-                    "uKs",
-                    "uNs",
-                    "d",
-                    "illum",
-		    "uSampler",
-                    "uIsCaught",
-                    "uTextured"
-                    ];
+    var uniformList = [ "uPMatrix", 
+                        "uMVMatrix", 
+                        "uNMatrix",
+                "uLightPosition",
+                "uWireframe",
+                "uLa",
+                "uLd",
+                "uLs",
+                "uKa",
+                "uKd",
+                "uKs",
+                "uNs",
+                "d",
+                "illum",
+                    "uSampler",
+                "uIsCaught",
+                "uTextured"
+                ];
+                    
 					
 	Program.load(attributeList, uniformList);
 	
@@ -277,14 +280,53 @@ function load(){
 
     Scene.loadObjectByParts('models/test/part', 'scene', 136);
     Scene.loadObject('models/jar_str8.json');
-
+    //Scene.loadObjectByParts('models/toys/train/part', 'train', 7);
+    //Scene.loadObjectByParts('models/toys/ugly_bunny/part', 'bunny', 4);
+    //Scene.loadObjectByParts('models/toys/puppy/part', 'puppy', 14);
+    //Scene.loadObjectByParts('models/toys/plane/part', 'plane', 13);
+    //Scene.loadObjectByParts('models/toys/giraffe/part', 'giraffe', 9);
+    Scene.loadObjectByParts('models/toys/turtle/part', 'turtle', 20);
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
           Scene.loadObject('models/ff.json', str);
      }
+
+     placeToy();
      
     //Scene.loadObject('models/stoneBrick.json');
+}
+
+// Returns the euclidean distance from the specified point
+// to the current camera position. ONLY WORKS FOR TOYS AND LIGHTS.
+function objDist(obj_pos) {
+    var cam_pos = camera.position;
+
+    var dist = Math.sqrt((camera.position[0] - obj_pos[0])*(camera.position[0] - obj_pos[0]) + 
+                         (camera.position[1] - obj_pos[1])*(camera.position[1] - obj_pos[1]) +
+                         (camera.position[2] - obj_pos[2])*(camera.position[2] - obj_pos[2]));
+
+    //console.log(dist);
+
+    return dist;
+}
+
+function placeToy() {
+    Scene.loadObjectByParts('models/toys/ducky/part', 'toy', 4);
+
+    toy['objects'] = [];
+    for (i = 1; i <= 4; i++) {
+        toy.objects.push('toy' + i);
+    }
+
+    var cur_pos = camera.position;
+    var prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
+    
+    while (objDist(prospective_position) < 6) {
+        prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
+    }
+
+    toy.position = prospective_position;
 }
 
 
@@ -309,36 +351,42 @@ function render(){
 	    if (object.visible != undefined && !object.visible) continue;
             
 	    transforms.calculateModelView();           
-            transforms.push();
+        transforms.push();
             
-            if (object.alias == 'jar') {
-                var pos = camera.position;
-                var cam_n = camera.normal;
-                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
+        if (object.alias == 'jar') {
+            var pos = camera.position;
+            var cam_n = camera.normal;
+            pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
                 
-                // Not quite right :( Can you fix this? I figured out the roations
-                // to keep the orientation of the jar correct, but now it moves
-                // in front of the camera :/
-                mat4.translate(transforms.mvMatrix, pos);
-                //mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
+            // Not quite right :( Can you fix this? I figured out the roations
+            // to keep the orientation of the jar correct, but now it moves
+            // in front of the camera :/
+            mat4.translate(transforms.mvMatrix, pos);
+            mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
                 
-                //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
-                //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
-            }
+            //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
+            //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
+        }
             
             // handle the firefly objects aliased as 'firefly#'
 	    if (object.alias.search('firefly') >= 0) {
-                var pos = camera.position;
-                var cam_n = camera.normal;
-                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
-                if (Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).is_caught[0] == 1.0){
+               if (Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).is_caught[0] == 1.0){
+                    var pos = camera.position;
+                    var cam_n = camera.normal;
+                    pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
                     mat4.translate(transforms.mvMatrix, pos);
                 }
                 else {
                     mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
-                }
+                    mat4.translate(transforms.mvMatrix, [0.0, pos_cone, 0.0]);
+                    //console.log('position is ' + (Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position + [0.0,pos_cone,0.0]));
+               }
             }
-            
+
+
+        if (object.alias.search('toy') >= 0) {
+            mat4.translate(transforms.mvMatrix, toy.position);
+        }            
             //if (object.alias == 'stone') {
             //    var pos = camera.position;
             //    var cam_n = camera.normal;
@@ -424,8 +472,72 @@ function render(){
     }
 
     camera.walk();
+
+    if (objDist([toy.position[0], 0.4, toy.position[2]]) < 0.5) {
+        for (var i = 0; i < toy.objects.length; i++) {
+            Scene.removeObject(toy.objects[i]);
+        }
+
+        console.log('GOT IT!');
+        placeToy();
+    }
 }
 
+
+var dx_sphere = 0.01;
+var dx_cone = 0.001;
+var pos_sphere = .1;
+var pos_cone = 0;
+
+var frequency = 5; 
+var elapsedTime = undefined;
+var initialTime = undefined;
+
+function animate(){
+	pos_sphere += dx_sphere;
+    if (pos_sphere >= .3 || pos_sphere <=-.1){
+    	dx_sphere = -dx_sphere;
+    }
+    
+    pos_cone += dx_cone;
+    if (pos_cone >= .3 || pos_cone <=-.1){
+    	dx_cone = -dx_cone;
+    }
+	render();
+}
+
+function onFrame(){
+    elapsedTime = (new Date).getTime() - initialTime;
+    if (elapsedTime < frequency) return; //come back later!
+    
+    var steps = Math.floor(elapsedTime / frequency);
+    while(steps > 0){
+        animate();
+        steps -= 1;
+    }
+    initialTime = (new Date).getTime();
+}
+
+function startAnimation(){
+    initialTime = (new Date).getTime();
+	setInterval(onFrame,frequency/1000);
+}
+
+
+/**
+* Entry point. This function is invoked when the page is loaded
+*/
+//var app = null;
+//function runGame() {
+//    app = new WebGLApp("canvas-element-id")
+//    app.configureGLHook = configure;
+//    app.loadSceneHook   = load;
+//    app.drawSceneHook   = draw;
+//    app.run();
+//    
+//    startAnimation();
+//
+//}
 
 var app;
 function runGame(){
@@ -433,7 +545,9 @@ function runGame(){
     app.configureGLHook = configure;
     app.loadSceneHook   = load;
     app.drawSceneHook   = render;
-    app.run(); 
+    app.run();
+
+    startAnimation();
 }
 </script>
 </head>
