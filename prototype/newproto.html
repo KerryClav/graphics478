@@ -172,7 +172,6 @@ cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11;
 
-
 toy = {};
 
 function configure(){
@@ -225,24 +224,25 @@ function configure(){
 					"aVertexColor",
                     "aTextureCoord"];
 
-	var uniformList = [	"uPMatrix", 
-					"uMVMatrix", 
-					"uNMatrix",
-                    "uLightPosition",
-                    "uWireframe",
-                    "uLa",
-                    "uLd",
-                    "uLs",
-                    "uKa",
-                    "uKd",
-                    "uKs",
-                    "uNs",
-                    "d",
-                    "illum",
-					"uSampler",
-                    "uTextured",
-                    "uIscaught"
-                    ];
+    var uniformList = [ "uPMatrix", 
+                        "uMVMatrix", 
+                        "uNMatrix",
+                "uLightPosition",
+                "uWireframe",
+                "uLa",
+                "uLd",
+                "uLs",
+                "uKa",
+                "uKd",
+                "uKs",
+                "uNs",
+                "d",
+                "illum",
+                    "uSampler",
+                "uIsCaught",
+                "uTextured"
+                ];
+                    
 					
 	Program.load(attributeList, uniformList);
 	
@@ -286,7 +286,7 @@ function load(){
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
-          Scene.loadObject('models/ff.json', str);
+          Scene.loadObject('models/firefly.json', str);
      }
 
      placeToy();
