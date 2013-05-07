@@ -1,5 +1,7 @@
 <html>
 <head>
+<link rel="stylesheet" type="text/css" href="style.css">
+
 <!-- MATH Libraries //-->
 <script type='text/javascript' src='js/gl-matrix-min.js'></script>
 <!-- WEBGL Libraries //-->
@@ -172,6 +174,17 @@ cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11;
 
+
+masterToyList = [   {"name": "cat", "parts": 7}, 
+                    {"name": "ducky", "parts": 4}, 
+                    {"name": "giraffe", "parts": 9}, 
+                    {"name": "plane", "parts": 13}, 
+                    {"name": "puppy", "parts": 14}, 
+                    {"name": "puppy2", "parts": 15}, 
+                    {"name": "turtle", "parts": 20}, 
+                    {"name": "ugly_bunny", "parts": 4}
+                ];
+dummyToyList = masterToyList;
 toy = {};
 
 function configure(){
@@ -276,6 +289,22 @@ function updateLightsInShader() {
      gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
 }
 
+
+function randomInt(max) {
+    var scaler = Math.random();
+    var round = Math.random();
+
+    var ret = max * scaler;
+
+    if (round >= 0.5) {
+        ret = Math.ceil(ret);
+    } else {
+        ret = Math.floor(ret);
+    }
+
+    return ret;
+}
+
 function load(){
 
     Scene.loadObjectByParts('models/test/part', 'scene', 136);
@@ -285,14 +314,16 @@ function load(){
     //Scene.loadObjectByParts('models/toys/puppy/part', 'puppy', 14);
     //Scene.loadObjectByParts('models/toys/plane/part', 'plane', 13);
     //Scene.loadObjectByParts('models/toys/giraffe/part', 'giraffe', 9);
-    Scene.loadObjectByParts('models/toys/turtle/part', 'turtle', 20);
+    //Scene.loadObjectByParts('models/toys/turtle/part', 'turtle', 20);
+    //Scene.loadObjectByParts('models/toys/puppy2/part', 'puppy2', 15);
+    //Scene.loadObjectByParts('models/toys/cat/part', 'cat', 7);
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
           var str = 'firefly' + i;
           Scene.loadObject('models/ff.json', str);
      }
 
-     placeToy();
+     placeToy(randomInt(dummyToyList.length - 1));
      
     //Scene.loadObject('models/stoneBrick.json');
 }
@@ -305,24 +336,23 @@ function objDist(obj_pos) {
     var dist = Math.sqrt((camera.position[0] - obj_pos[0])*(camera.position[0] - obj_pos[0]) + 
                          (camera.position[1] - obj_pos[1])*(camera.position[1] - obj_pos[1]) +
                          (camera.position[2] - obj_pos[2])*(camera.position[2] - obj_pos[2]));
-
-    //console.log(dist);
-
     return dist;
 }
 
-function placeToy() {
-    Scene.loadObjectByParts('models/toys/ducky/part', 'toy', 4);
+function placeToy(idx) {
+    var cur_toy = dummyToyList.splice(idx, 1)[0];
+
+    Scene.loadObjectByParts('models/toys/' + cur_toy.name + '/part', 'toy', cur_toy.parts);
 
     toy['objects'] = [];
-    for (i = 1; i <= 4; i++) {
+    for (i = 1; i <= cur_toy.parts; i++) {
         toy.objects.push('toy' + i);
     }
 
     var cur_pos = camera.position;
     var prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
     
-    while (objDist(prospective_position) < 6) {
+    while (objDist(prospective_position) < 7) {
         prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
     }
 
@@ -471,23 +501,24 @@ function render(){
 
     camera.walk();
 
-    if (objDist([toy.position[0], 0.4, toy.position[2]]) < 0.5) {
+    if (objDist(toy.position) < 0.5) {
         for (var i = 0; i < toy.objects.length; i++) {
             Scene.removeObject(toy.objects[i]);
         }
 
-        console.log('GOT IT!');
-        placeToy();
+        alert('got it! ' + dummyToyList.length + ' toys left!');
+        placeToy(randomInt(dummyToyList.length - 1));
     }
 }
 
 
 var app;
-function runGame(){
+function runGame() {
     app = new WebGLApp("the-canvas");
     app.configureGLHook = configure;
     app.loadSceneHook   = load;
     app.drawSceneHook   = render;
+
     app.run(); 
 }
 </script>
@@ -497,6 +528,9 @@ function runGame(){
 
 <div id="content">
     <canvas id='the-canvas' width='1000' height='800'></canvas>
+    <div id='sidebar'>
+        
+    </div>
 </div>
 
 </body>
