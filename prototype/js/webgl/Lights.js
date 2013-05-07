@@ -1,5 +1,6 @@
-var caughtpos = [0.0,0.2,0.0];
-var t = 0.0;
+var caughtpos = [0.0,0.2,0.0],
+t = 0.0,
+jarlightidx = 0;
 
 // a light is a firefly
 function Light(name){
@@ -18,10 +19,6 @@ function Light(name){
 	this.dr = [Math.random()*0.01,Math.random()*0.01,Math.random()*0.01];
 	this.w = [2 * Math.PI * Math.random()*0.01,
 		  2 * Math.PI * Math.random()*0.01, 2 * Math.PI * Math.random()*0.01];
-}
-
-Light.prototype.catchpermanent = function(){
-	return;
 }
 
 Light.prototype.setIsCaught = function(p){
@@ -90,33 +87,17 @@ var Lights = {
 	},
 
 	dimLights: function(delta){
-		for(var i = 0, max = this.list.length; i < max; i+=1){
-			if(this.list[i].is_caught[0] == 1.0) {
-				this.list[i].is_caught[1] = Math.max(this.list[i].is_caught[1] - delta, 0.0);
-			}
-		}
+		this.list[jarlightidx].is_caught[1] =
+			Math.max(this.list[jarlightidx].is_caught[1] - delta, 0.0);
 		return;
 	},
 	
-	catchLight: function(idx){
-		if ((typeof idx == 'number') && idx >= 0 && idx < this.list.length){
-			this.list[idx].position = caughtpos;
-			this.list[idx].is_caught = [1.0,1.0];
-			return;
-		}
-		else if (typeof idx == 'string'){
-			for(var i=0, max = this.list.length; i < max; i+=1){
-				if (this.list[i].id == idx) {
-					this.list[i].position = caughtpos;
-					this.list[i].is_caught = [1.0,1.0];
-					return;
-				}
-			}
-			throw 'Light ' + idx + ' does not exist';
-		}
-		else {
-			throw 'Unknown parameter';
-		}		
+	catchLight: function(idx, pos){
+		this.list[idx].startposition = pos;
+		this.list[idx].position = pos;
+		console.log('position was ' + pos);
+		this.list[jarlightidx].is_caught[1] += 1.0;
+		return;		
 	},
 	
 	animateLights: function (){
@@ -130,6 +111,13 @@ var Lights = {
 				}
 			}
 		}
+		return;
+	},
+	
+	setJarLight: function (idx){
+		jarlightidx = idx;
+		this.list[idx].position = caughtpos;
+		this.list[idx].is_caught = [1.0,2.0];
 		return;
 	}
 }

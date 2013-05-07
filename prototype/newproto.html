@@ -21,7 +21,7 @@
 
 <script id="shader-vs" type="x-shader/x-vertex">
 
-const int NUM_LIGHTS = 4; //Globals.NUM_FIREFLIES;
+const int NUM_LIGHTS = 6; //Globals.NUM_FIREFLIES;
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
@@ -73,7 +73,7 @@ precision highp float;
 
 
 //Light uniforms
-const int NUM_LIGHTS = 4;
+const int NUM_LIGHTS = 6;
 uniform vec3  uLa[NUM_LIGHTS];   //ambient
 uniform vec3  uLd[NUM_LIGHTS];   //diffuse
 uniform vec3  uLs[NUM_LIGHTS];   //specular
@@ -165,9 +165,9 @@ void main(void) {
 <script type="text/javascript">
 
 var camera = null,
-numFireflies = 4,  // make sure to change the constant NUM_LIGHTS in the shaders too!
+numFireflies = 6,  // make sure to change the constant NUM_LIGHTS in the shaders too!
 ptlights = [],
-//caughtpos = [0.0,0.2,0.0],
+jarlightidx = 0,
 transforms = null,
 
 cameraHome = [0.0,0.4,7],
@@ -221,8 +221,7 @@ function configure(){
           Lights.add(ptlights[i]);
      }
      
-     Lights.catchLight(0);
-     Lights.catchLight(1);
+     Lights.setJarLight(jarlightidx);
 
     //init Program
 	var attributeList = [           "aVertexPosition",
@@ -313,8 +312,10 @@ function load(){
     //Scene.loadObjectByParts('models/toys/train2/part', 'train', 7);
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
-          var str = 'firefly' + i;
-          Scene.loadObject('models/ff.json', str);
+          if (i != jarlightidx) {
+               var str = 'firefly' + i;
+               Scene.loadObject('models/ff.json', str);
+          }
      }
 
      placeToy(randomInt(dummyToyList.length - 1));
@@ -395,22 +396,11 @@ function render(){
             // in front of the camera :/
             mat4.translate(transforms.mvMatrix, pos);
             mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
-                
-            //console.log('pre: ' + Array.prototype.slice.call(transforms.mvMatrix));
-            //console.log('post: ' + Array.prototype.slice.call(transforms.mvMatrix));
         }
             
             // handle the firefly objects aliased as 'firefly#'
 	    if (object.alias.search('firefly') >= 0) {
-                var pos = camera.position;
-                var cam_n = camera.normal;
-                pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
-                if (Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).is_caught[0] == 1.0){
-                    mat4.translate(transforms.mvMatrix, pos);
-                }
-                else {
-                    mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
-                }
+                mat4.translate(transforms.mvMatrix, Lights.get(parseInt(object.alias.match(/\d+/)[0], 10)).position);
             }
 
 
@@ -454,16 +444,6 @@ function render(){
             gl.uniform1f(Program.uNs, object.Ns);
             gl.uniform1f(Program.d, object.d);
             gl.uniform1i(Program.illum, object.illum);
-            
-           /*if(object.d < 1.0){  //tweaking parameters here
-                switch(selectedCar){
-                    case 'bmwv3': gl.uniform1f(Program.d, 0.14); break;
-                    case 'audi' : gl.uniform1f(Program.d, 0.8); break;
-                    case 'mustang': gl.uniform1f(Program.d, 0.3); break;
-                    case 'bmwi8': break; //nothing to do here
-                }
-			}*/
-           
             
             gl.bindBuffer(gl.ARRAY_BUFFER, object.vbo);
             gl.vertexAttribPointer(Program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
@@ -517,6 +497,20 @@ function render(){
             placeToy(randomInt(dummyToyList.length - 1));
         }
     }
+    
+     //"catch" nearby fireflies
+     for(var i = 0; i < numFireflies; i+=1) {
+          if (i != jarlightidx) {
+               if (objDist(Lights.get(i).position) < 0.5) {
+                    prospective_position = [Math.random()*10-5,0.2,Math.random()*10-5];
+                    while (objDist(prospective_position) < 6) {
+                         prospective_position = [Math.random()*10-5,0.2,Math.random()*10-5];
+                    }
+                    Lights.catchLight(i, prospective_position);
+               }
+          }
+     }
+
 }
 
 
