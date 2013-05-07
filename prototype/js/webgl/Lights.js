@@ -8,8 +8,8 @@ function Light(name){
 	this.startposition = [Math.random()*10-5,0.2,Math.random()*10-5];
 	this.position = this.startposition;
 	this.ambient = [1.0,1.0,1.0];
-	this.diffuse = [0.2,0.2,0.2];
-	this.specular = [0.05,0.05,0.05];
+	this.diffuse = [0.3,0.3,0.2];
+	this.specular = [0.0,0.0,0.0];
 	
 	// is_caught[0] specifies whether or not the firefly is caught
 	// is_caught[1] specifies how much light the firefly has left
@@ -117,7 +117,7 @@ var Lights = {
 	setJarLight: function (idx){
 		jarlightidx = idx;
 		this.list[idx].position = caughtpos;
-		this.list[idx].is_caught = [1.0,2.0];
+		this.list[idx].is_caught = [1.0,5.0];
 		return;
 	}
 }
