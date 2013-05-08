@@ -129,6 +129,6 @@ var Lights = {
 	},
 	
 	checkJarLight: function (){
-		return this.list[jarlightidx].is_caught[1];
+		return this.list[jarlightidx].is_caught[1]/jarcapacity;
 	}
 }
