@@ -157,7 +157,7 @@ Camera.prototype.walk = function() {
         this.calculateOrientation();
         mat4.multiplyVec4(this.matrix, [0, 0, 0, 1], this.position);
 
-        console.log(Array.prototype.slice.call(camera.position));
+        //console.log(Array.prototype.slice.call(camera.position));
     }
 
     this.lastWalkTime = timeNow;

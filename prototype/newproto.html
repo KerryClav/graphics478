@@ -349,7 +349,7 @@ function placeToy(idx) {
 
     toy.position = prospective_position;
 
-    var sidebar = document.getElementById('sidebar');
+    var sidebar = document.getElementById('sidebar_right');
     var img = new Image();
     img.src = 'images/' + cur_toy.name + '_silo.png';
     img.id = 'toy' + (8 - dummyToyList.length);
@@ -506,7 +506,7 @@ function render(){
 
 }
 
-
+// checkJarLight() -> returns zero to 1 
 
 
 var app;
@@ -524,8 +524,13 @@ function runGame() {
 <body onLoad='runGame()'>
 
 <div id="content">
+    <div id="sidebar_left">
+        <div id="lightbar-container">
+            <div id="lightbar"></div>
+        </div>
+    </div>
     <canvas id='the-canvas' width='1000' height='800'></canvas>
-    <div id='sidebar'>
+    <div id='sidebar_right'>
     </div>
 </div>
 

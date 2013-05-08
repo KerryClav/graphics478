@@ -106,8 +106,8 @@ var Lights = {
 		for(var i = 0, max = this.list.length; i < max; i+=1){
 			// if the light is not caught then move it
 			if(this.list[i].is_caught[0] == 0.0) {
-				console.log('start position of ' + i + ' is ' + this.list[i].startposition);
-				console.log('position of ' + i + ' is ' + this.list[i].position);
+				//console.log('start position of ' + i + ' is ' + this.list[i].startposition);
+				//console.log('position of ' + i + ' is ' + this.list[i].position);
 				for(var j = 0; j < 3; j+=1){
 					this.list[i].position[j] = this.list[i].startposition[j] +
 						(this.list[i].dr[j] * 0.5 *
