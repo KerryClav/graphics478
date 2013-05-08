@@ -18,7 +18,7 @@
 
 <script id="shader-vs" type="x-shader/x-vertex">
 
-const int NUM_LIGHTS = 4;
+const int NUM_LIGHTS = 6;
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
@@ -70,7 +70,7 @@ precision highp float;
 
 
 //Light uniforms
-const int NUM_LIGHTS = 4;
+const int NUM_LIGHTS = 6;
 uniform vec3  uLa[NUM_LIGHTS];   //ambient
 uniform vec3  uLd[NUM_LIGHTS];   //diffuse
 uniform vec3  uLs[NUM_LIGHTS];   //specular
@@ -169,7 +169,7 @@ floorheight = 0.0,
 eyelevel = 0.25,
 
 // firefly variables
-numFireflies = 4,  // make sure to change the constant NUM_LIGHTS in the shaders too!
+numFireflies = 6,  // make sure to change the constant NUM_LIGHTS in the shaders too!
 ptlights = [],
 jarlightidx = 0;   // by default the light0 is placed permanently with the camera
 lightmeter = null;
@@ -253,21 +253,13 @@ function configure(){
 	Program.load(attributeList, uniformList);
 	
 
-
-    //gl.uniform3fv(Program.uLightPosition, Lights.getArray('position'));
     gl.uniform3fv(Program.uLa ,     Lights.getArray('ambient'));
     gl.uniform3fv(Program.uLd,      Lights.getArray('diffuse'));
     gl.uniform3fv(Program.uLs,      Lights.getArray('specular'));
-    //gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
+
     updateLightsInShader();
     
-    // debugging
-    //console.log('iscaught array is ' + Lights.getArray('is_caught'));
-    //console.log(gl.getUniform(prg, Program.uIsCaught));
-    //            console.log('lights array is ' + Lights.getArray('position'));
-    //            console.log('lights diffuse is ' + Lights.getArray('diffuse'));
-    //            console.log(gl.getUniform(prg, Program.uLd));
-    //
+
     gl.uniform3fv(Program.uKa ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKd ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKs ,     [1.0,1.0,1.0]);
@@ -313,8 +305,6 @@ function load(){
      }
 
      placeToy(randomInt(dummyToyList.length - 1));
-     
-    //Scene.loadObject('models/stoneBrick.json');
 }
 
 // Returns the euclidean distance from the specified point
@@ -339,10 +329,10 @@ function placeToy(idx) {
     }
 
     var cur_pos = camera.position;
-    var prospective_position = randpos(0.0);
+    var prospective_position = avoidHouse(randpos(0.0));
     
     while (objDist(prospective_position) < 7) {
-        prospective_position = randpos(0.0);
+        prospective_position = avoidHouse(randpos(0.0));
     }
 
     toy.position = prospective_position;
@@ -355,6 +345,13 @@ function placeToy(idx) {
     sidebar.insertBefore(img, sidebar.firstChild);
 }
 
+function avoidHouse(pos) {
+     if (pos[0] > -6 && pos[0] < -2 && pos[2] > 8 && pos[2] < 13) {
+          pos[0] += 5.0;
+          pos[2] -= 6.0;
+     }
+     return pos;
+}
 
 function degToRad(degrees) {
     return degrees * Math.PI / 180;
@@ -362,7 +359,7 @@ function degToRad(degrees) {
 
 // returns a random position within the forest border with height ypos
 function randpos(ypos) {
-     return [Math.random()*14-7, ypos, Math.random()*14-7];
+     return [Math.random()*32-16, ypos, Math.random()*32-16];
 }
 
 function render(){
@@ -390,9 +387,6 @@ function render(){
             var cam_n = camera.normal;
             pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
                 
-            // Not quite right :( Can you fix this? I figured out the roations
-            // to keep the orientation of the jar correct, but now it moves
-            // in front of the camera :/
             mat4.translate(transforms.mvMatrix, pos);
             mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
         }
@@ -497,9 +491,9 @@ function render(){
      for(var i = 0; i < numFireflies; i+=1) {
           if (i != jarlightidx) {
                if (objDist(Lights.get(i).position) < 0.5) {
-                    prospective_position = randpos(eyelevel);
+                    prospective_position = avoidHouse(randpos(eyelevel));
                     while (objDist(prospective_position) < 6) {
-                         prospective_position = randpos(eyelevel);
+                         prospective_position = avoidHouse(randpos(eyelevel));
                     }
                     Lights.catchLight(i, prospective_position);
                }
@@ -522,6 +516,7 @@ function render(){
 
 }
 
+
 function reset() {
     camera.goHome();
     dummyToyList = masterToyList;
@@ -539,6 +534,7 @@ function reset() {
     menu.style.zIndex = -1;
     heading.innerHTML = '';
 }
+
 
 var app;
 function runGame() {
