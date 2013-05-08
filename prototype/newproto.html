@@ -21,7 +21,7 @@
 
 <script id="shader-vs" type="x-shader/x-vertex">
 
-const int NUM_LIGHTS = 6; //Globals.NUM_FIREFLIES;
+const int NUM_LIGHTS = 4;
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
@@ -73,7 +73,7 @@ precision highp float;
 
 
 //Light uniforms
-const int NUM_LIGHTS = 6;
+const int NUM_LIGHTS = 4;
 uniform vec3  uLa[NUM_LIGHTS];   //ambient
 uniform vec3  uLd[NUM_LIGHTS];   //diffuse
 uniform vec3  uLs[NUM_LIGHTS];   //specular
@@ -86,7 +86,6 @@ uniform vec3  uKs;   //specular
 uniform float uNs;   //specular coefficient
 uniform float d;     //Opacity
 uniform int   illum; //Illumination mode
-
 
 uniform bool  uWireframe;
 uniform bool uTextured;
@@ -110,8 +109,7 @@ void main(void) {
         return;
     }
 
-    vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));  
-
+   vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));  
 
    vec3 COLOR = vec3(0.0,0.0,0.0);
    vec3 N =  normalize(vNormal);
@@ -164,17 +162,21 @@ void main(void) {
 
 <script type="text/javascript">
 
+// camera and scene variables
 var camera = null,
-numFireflies = 6,  // make sure to change the constant NUM_LIGHTS in the shaders too!
-ptlights = [],
-jarlightidx = 0,
-transforms = null,
-
 cameraHome = [0.0,0.4,7],
 cameraAzimuth = 25,
 cameraElevation = -11;
+transforms = null,
+floorheight = 0.0,
+eyelevel = 0.25,
 
+// firefly variables
+numFireflies = 4,  // make sure to change the constant NUM_LIGHTS in the shaders too!
+ptlights = [],
+jarlightidx = 0;   // by default the light0 is placed permanently with the camera
 
+// object variables
 masterToyList = [   {"name": "cat", "parts": 7}, 
                     {"name": "ducky", "parts": 4}, 
                     {"name": "giraffe", "parts": 9}, 
@@ -221,6 +223,7 @@ function configure(){
           Lights.add(ptlights[i]);
      }
      
+     // make one of the lights stay with the camera at all times
      Lights.setJarLight(jarlightidx);
 
     //init Program
@@ -338,10 +341,10 @@ function placeToy(idx) {
     }
 
     var cur_pos = camera.position;
-    var prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
+    var prospective_position = randpos(0.0);
     
     while (objDist(prospective_position) < 7) {
-        prospective_position = [Math.random()*14-7,0.0,Math.random()*14-7];
+        prospective_position = randpos(0.0);
     }
 
     toy.position = prospective_position;
@@ -357,6 +360,11 @@ function placeToy(idx) {
 
 function degToRad(degrees) {
     return degrees * Math.PI / 180;
+}
+
+// returns a random position within the forest border with height ypos
+function randpos(ypos) {
+     return [Math.random()*14-7, ypos, Math.random()*14-7];
 }
 
 function render(){
@@ -487,9 +495,9 @@ function render(){
      for(var i = 0; i < numFireflies; i+=1) {
           if (i != jarlightidx) {
                if (objDist(Lights.get(i).position) < 0.5) {
-                    prospective_position = [Math.random()*10-5,0.2,Math.random()*10-5];
+                    prospective_position = randpos(eyelevel);
                     while (objDist(prospective_position) < 6) {
-                         prospective_position = [Math.random()*10-5,0.2,Math.random()*10-5];
+                         prospective_position = randpos(eyelevel);
                     }
                     Lights.catchLight(i, prospective_position);
                }
