@@ -21,7 +21,7 @@
 
 <script id="shader-vs" type="x-shader/x-vertex">
 
-const int NUM_LIGHTS = 4;
+const int NUM_LIGHTS = 6;
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
@@ -73,7 +73,7 @@ precision highp float;
 
 
 //Light uniforms
-const int NUM_LIGHTS = 4;
+const int NUM_LIGHTS = 6;
 uniform vec3  uLa[NUM_LIGHTS];   //ambient
 uniform vec3  uLd[NUM_LIGHTS];   //diffuse
 uniform vec3  uLs[NUM_LIGHTS];   //specular
@@ -172,7 +172,7 @@ floorheight = 0.0,
 eyelevel = 0.25,
 
 // firefly variables
-numFireflies = 4,  // make sure to change the constant NUM_LIGHTS in the shaders too!
+numFireflies = 6,  // make sure to change the constant NUM_LIGHTS in the shaders too!
 ptlights = [],
 jarlightidx = 0;   // by default the light0 is placed permanently with the camera
 
@@ -341,10 +341,10 @@ function placeToy(idx) {
     }
 
     var cur_pos = camera.position;
-    var prospective_position = randpos(0.0);
+    var prospective_position = avoidHouse(randpos(0.0));
     
     while (objDist(prospective_position) < 7) {
-        prospective_position = randpos(0.0);
+        prospective_position = avoidHouse(randpos(0.0));
     }
 
     toy.position = prospective_position;
@@ -357,6 +357,13 @@ function placeToy(idx) {
     sidebar.insertBefore(img, sidebar.firstChild);
 }
 
+function avoidHouse(pos) {
+     if (pos[0] > -6 && pos[0] < -2 && pos[2] > 8 && pos[2] < 13) {
+          pos[0] += 5.0;
+          pos[2] -= 6.0;
+     }
+     return pos;
+}
 
 function degToRad(degrees) {
     return degrees * Math.PI / 180;
@@ -364,7 +371,7 @@ function degToRad(degrees) {
 
 // returns a random position within the forest border with height ypos
 function randpos(ypos) {
-     return [Math.random()*14-7, ypos, Math.random()*14-7];
+     return [Math.random()*32-16, ypos, Math.random()*32-16];
 }
 
 function render(){
@@ -510,9 +517,6 @@ function render(){
      }
 
 }
-
-
-
 
 var app;
 function runGame() {

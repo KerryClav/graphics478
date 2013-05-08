@@ -4,10 +4,18 @@ jarlightidx = 0;
 jarcapacity = 10.0;
 djarintensity = 5.0;
 
+//function avoidHouse(pos) {
+//     if (pos[0] > -6 && pos[0] < -2 && pos[2] > 8 && pos[2] < 13) {
+//          pos[0] += 5.0;
+//          pos[2] -= 6.0;
+//     }
+//     return pos;
+//}
+
 // a light is a firefly
 function Light(name){
 	this.id = name;
-	this.startposition = [Math.random()*10-5,0.25,Math.random()*10-5];
+	this.startposition = avoidHouse([Math.random()*32-16,0.25,Math.random()*32-16]);
 	this.position = this.startposition.slice(0);
 	this.ambient = [1.0,1.0,1.0];
 	this.diffuse = [0.3,0.3,0.2];
@@ -108,8 +116,6 @@ var Lights = {
 		for(var i = 0, max = this.list.length; i < max; i+=1){
 			// if the light is not caught then move it
 			if(this.list[i].is_caught[0] == 0.0) {
-				console.log('start position of ' + i + ' is ' + this.list[i].startposition);
-				console.log('position of ' + i + ' is ' + this.list[i].position);
 				for(var j = 0; j < 3; j+=1){
 					this.list[i].position[j] = this.list[i].startposition[j] +
 						(this.list[i].dr[j] * 0.5 *
