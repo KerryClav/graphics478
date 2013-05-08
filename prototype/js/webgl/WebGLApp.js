@@ -1,4 +1,6 @@
 var WEBGLAPP_RENDER = undefined;
+var reqIdx = null;
+
 
 function WebGLApp(canvas) {
     this.loadSceneHook = undefined;
@@ -36,6 +38,18 @@ WebGLApp.prototype.run = function(){
 renderLoop = function(){
     if(WEBGLAPP_RENDER){
         WEBGLAPP_RENDER();
-        requestAnimFrame(renderLoop);
+        reqIdx = requestAnimFrame(renderLoop);
      }
+}
+
+WebGLApp.prototype.stop = function() {
+    //debugger;
+    window.cancelAnimationFrame(reqIdx);
+    WEBGLAPP_RENDER = undefined;
+}
+
+WebGLApp.prototype.play = function() {
+
+    WEBGLAPP_RENDER = this.drawSceneHook;
+    renderLoop();
 }

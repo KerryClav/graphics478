@@ -54,9 +54,33 @@
 	height: 90px;
 }
 
+@font-face {
+    font-family: 'IdolwildRegular';
+    src: url('idolwild-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
 #menu {
+	font-family: 'IdolwildRegular';
 	width: 1216px;
 	height: 800px;
-	background: green;
 	position: absolute;
+	display: none;
+	background: #00001A;
+	text-align: center;
+}
+
+#menu-heading {
+	padding-top: 120px;
+	color: yellow;
+	font-size: 50px;
+}
+
+#button {
+	padding-top: 20px;
+	color: white;
+	font-size: 30px;
+	cursor: hand;
 }

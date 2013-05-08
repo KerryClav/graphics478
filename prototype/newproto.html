@@ -9,15 +9,12 @@
 <script type='text/javascript' src='js/webgl/Utils.js'></script>
 <script type='text/javascript' src='js/webgl/Program.js'></script>
 <script type='text/javascript' src='js/webgl/Scene.js'></script>
-<script type='text/javascript' src='js/webgl/Axis.js'></script>
-<script type='text/javascript' src='js/webgl/Floor.js'></script>
 <script type='text/javascript' src='js/webgl/Camera.js'></script>
 <script type='text/javascript' src='js/webgl/CameraInteractor.js'></script>
 <script type='text/javascript' src='js/webgl/SceneTransforms.js'></script>
 <script type='text/javascript' src='js/webgl/Texture.js'></script>
 <script type='text/javascript' src='js/webgl/Lights.js'></script>
 <script type='text/javascript' src='js/webgl/WebGLApp.js'></script>
-<script type='text/javascript' src='js/webgl/Picker.js'></script>
 
 <script id="shader-vs" type="x-shader/x-vertex">
 
@@ -175,6 +172,7 @@ eyelevel = 0.25,
 numFireflies = 4,  // make sure to change the constant NUM_LIGHTS in the shaders too!
 ptlights = [],
 jarlightidx = 0;   // by default the light0 is placed permanently with the camera
+lightmeter = null;
 
 // object variables
 masterToyList = [   {"name": "cat", "parts": 7}, 
@@ -484,10 +482,14 @@ function render(){
         var cur_img = document.getElementById('toy' + (8 - dummyToyList.length));
         cur_img.src = 'images/' + cur_img.toyName + '.png';
 
+        // You win!
         if (dummyToyList.length == 0) {
-            alert('Cool.');
-        } else {
-            placeToy(randomInt(dummyToyList.length - 1));
+          app.stop();
+          var menu = document.getElementById('menu');
+          menu.style.display = 'block';
+          menu.style.zIndex = '2';
+          var heading = document.getElementById('menu-heading');
+          heading.innerHTML = 'Congratulations, you won!';
         }
     }
     
@@ -504,18 +506,44 @@ function render(){
           }
      }
      
-     //check jar intensity here
-     if (Lights.checkJarLight == 0.0) {
-          console.log('YOU LOSE NEENER NEENER');
+     //check jar intensity here, adjust GUI
+     var jarLight = Lights.checkJarLight();
+     lightmeter.style.height = '' + Math.ceil(jarLight * 100) + '%';
+
+     // You lose!
+     if (jarLight == 0) {
+          app.stop();
+          var menu = document.getElementById('menu');
+          menu.style.display = 'block';
+          menu.style.zIndex = '2';
+          var heading = document.getElementById('menu-heading');
+          heading.innerHTML = 'Sorry, your lights have gone out.';
      }
 
 }
 
-// checkJarLight() -> returns zero to 1 
+function reset() {
+    camera.goHome();
+    dummyToyList = masterToyList;
 
+    for (var i = 0; i < toy.objects.length; i++) {
+        Scene.removeObject(toy.objects[i]);
+    }
+
+    var right_side = document.getElementById('sidebar_right');
+    right_side.innerHTML = '';
+    placeToy(randomInt(dummyToyList.length - 1));
+    Lights.setJarLight(0);
+    app.play();
+    menu.style.display = 'none';
+    menu.style.zIndex = -1;
+    heading.innerHTML = '';
+}
 
 var app;
 function runGame() {
+    lightmeter = document.getElementById('lightbar')
+    document.getElementById('button').onclick = function() { reset(); };
     app = new WebGLApp("the-canvas");
     app.configureGLHook = configure;
     app.loadSceneHook   = load;
@@ -539,7 +567,9 @@ function runGame() {
     </div>
 </div>
 <div id="menu">
-    
+    <h1 id="menu-heading"></h1>
+    <p id="other-text"></p>
+    <a id="button">Play again?</a>
 </div>
 
 </body>
