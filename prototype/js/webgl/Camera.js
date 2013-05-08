@@ -144,8 +144,8 @@ Camera.prototype.walk = function() {
         var camY = this.position[1];
         var camZ = this.position[2];
 
-        camX = Math.max(Math.min(camX - xDif, 8.0), -8.0);
-        camZ = Math.max(Math.min(camZ - zDif, 8.0), -8.0);
+        camX = Math.max(Math.min(camX - xDif, 18.0), -18.0);
+        camZ = Math.max(Math.min(camZ - zDif, 18.0), -18.0);
         vec3.set([camX, camY, camZ], this.position);
 
         // Update without re-rendering.
@@ -157,7 +157,7 @@ Camera.prototype.walk = function() {
         this.calculateOrientation();
         mat4.multiplyVec4(this.matrix, [0, 0, 0, 1], this.position);
 
-        //console.log(Array.prototype.slice.call(camera.position));
+        console.log(Array.prototype.slice.call(camera.position));
     }
 
     this.lastWalkTime = timeNow;

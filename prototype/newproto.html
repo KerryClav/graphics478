@@ -282,6 +282,7 @@ function updateLightsInShader() {
 }
 
 
+// Returns an int between 0 and max inclusive.
 function randomInt(max) {
     var scaler = Math.random();
     var round = Math.random();
@@ -299,17 +300,9 @@ function randomInt(max) {
 
 function load(){
 
-    Scene.loadObjectByParts('models/test/part', 'scene', 136);
+    Scene.loadObjectByParts('models/scene_final/part', 'scene', 511);
     Scene.loadObject('models/jar_str8.json');
-    //Scene.loadObjectByParts('models/toys/train/part', 'train', 7);
-    //Scene.loadObjectByParts('models/toys/ugly_bunny/part', 'bunny', 4);
-    //Scene.loadObjectByParts('models/toys/puppy/part', 'puppy', 14);
-    //Scene.loadObjectByParts('models/toys/plane/part', 'plane', 13);
-    //Scene.loadObjectByParts('models/toys/giraffe/part', 'giraffe', 9);
-    //Scene.loadObjectByParts('models/toys/turtle/part', 'turtle', 20);
-    //Scene.loadObjectByParts('models/toys/puppy2/part', 'puppy2', 15);
-    //Scene.loadObjectByParts('models/toys/cat/part', 'cat', 7);
-    //Scene.loadObjectByParts('models/toys/train2/part', 'train', 7);
+
      // load fireflies
      for(var i = 0; i < numFireflies; i+=1) {
           if (i != jarlightidx) {
@@ -324,7 +317,7 @@ function load(){
 }
 
 // Returns the euclidean distance from the specified point
-// to the current camera position. ONLY WORKS FOR TOYS AND LIGHTS.
+// to the current camera position.
 function objDist(obj_pos) {
     var cam_pos = camera.position;
 
@@ -407,14 +400,6 @@ function render(){
         if (object.alias.search('toy') >= 0) {
             mat4.translate(transforms.mvMatrix, toy.position);
         }            
-            //if (object.alias == 'stone') {
-            //    var pos = camera.position;
-            //    var cam_n = camera.normal;
-            //    pos = [pos[0] - (0.25 * cam_n[0]) + 0.05, 0.17 - (0.25 * cam_n[1]), pos[2] - (0.25 * cam_n[2])];
-            //    mat4.translate(transforms.mvMatrix, pos);
-            //    mat4.rotateY(transforms.mvMatrix, degToRad(camera.azimuth));
-            //}
-
 
             transforms.setMatrixUniforms();
             transforms.pop();
