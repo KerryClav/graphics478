@@ -484,6 +484,8 @@ function render(){
           menu.style.zIndex = '2';
           var heading = document.getElementById('menu-heading');
           heading.innerHTML = 'Congratulations, you won!';
+        } else {
+            placeToy(randomInt(dummyToyList.length - 1));
         }
     }
     
