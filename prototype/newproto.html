@@ -255,21 +255,13 @@ function configure(){
 	Program.load(attributeList, uniformList);
 	
 
-
-    //gl.uniform3fv(Program.uLightPosition, Lights.getArray('position'));
     gl.uniform3fv(Program.uLa ,     Lights.getArray('ambient'));
     gl.uniform3fv(Program.uLd,      Lights.getArray('diffuse'));
     gl.uniform3fv(Program.uLs,      Lights.getArray('specular'));
-    //gl.uniform2fv(Program.uIsCaught, Lights.getArray('is_caught'));
+
     updateLightsInShader();
     
-    // debugging
-    //console.log('iscaught array is ' + Lights.getArray('is_caught'));
-    //console.log(gl.getUniform(prg, Program.uIsCaught));
-    //            console.log('lights array is ' + Lights.getArray('position'));
-    //            console.log('lights diffuse is ' + Lights.getArray('diffuse'));
-    //            console.log(gl.getUniform(prg, Program.uLd));
-    //
+
     gl.uniform3fv(Program.uKa ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKd ,     [1.0,1.0,1.0]);
     gl.uniform3fv(Program.uKs ,     [1.0,1.0,1.0]);
