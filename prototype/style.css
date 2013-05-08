@@ -53,3 +53,10 @@
 	width: 90px;
 	height: 90px;
 }
+
+#menu {
+	width: 1216px;
+	height: 800px;
+	background: green;
+	position: absolute;
+}
