@@ -4,14 +4,6 @@ jarlightidx = 0;
 jarcapacity = 10.0;
 djarintensity = 5.0;
 
-//function avoidHouse(pos) {
-//     if (pos[0] > -6 && pos[0] < -2 && pos[2] > 8 && pos[2] < 13) {
-//          pos[0] += 5.0;
-//          pos[2] -= 6.0;
-//     }
-//     return pos;
-//}
-
 // a light is a firefly
 function Light(name){
 	this.id = name;

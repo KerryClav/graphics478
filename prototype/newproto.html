@@ -502,9 +502,9 @@ function render(){
      for(var i = 0; i < numFireflies; i+=1) {
           if (i != jarlightidx) {
                if (objDist(Lights.get(i).position) < 0.5) {
-                    prospective_position = randpos(eyelevel);
+                    prospective_position = avoidHouse(randpos(eyelevel));
                     while (objDist(prospective_position) < 6) {
-                         prospective_position = randpos(eyelevel);
+                         prospective_position = avoidHouse(randpos(eyelevel));
                     }
                     Lights.catchLight(i, prospective_position);
                }
